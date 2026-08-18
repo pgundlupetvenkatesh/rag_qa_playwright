@@ -1,0 +1,1044 @@
+[
+  {
+    "id": "RAG-0001",
+    "question": "When did the Shah kingdom start to collapse?",
+    "context": [
+      "The USSR's invasion of Afghanistan was only one sign of insecurity in the region, also marked by increased American weapons sales, technology, and outright military presence. Saudi Arabia and Iran became increasingly dependent on American security assurances to manage both external and internal threats, including increased military competition between them over increased oil revenues. Both states were competing for preeminence in the Persian Gulf and using increased revenues to fund expanded militaries. By 1979, Saudi arms purchases from the US exceeded five times Israel's. Another motive for the large scale purchase of arms from the US by Saudi Arabia was the failure of the Shah during January 1979 to maintain control of Iran, a non-Arabic but largely Shiite Muslim nation, which fell to a theocratic Islamist government under the Ayatollah Ruhollah Khomeini in the wake of the 1979 Iranian Revolution. Saudi Arabia, on the other hand, is an Arab, largely Sunni Muslim nation headed by a near absolutist monarchy. In the wake of the Iranian revolution the Saudis were forced to deal with the prospect of internal destabilization via the radicalism of Islamism, a reality which would quickly be revealed in the seizure of the Grand Mosque in Mecca by Wahhabi extremists during November 1979 and a Shiite revolt in the oil rich Al-Hasa region of Saudi Arabia in December of the same year. In November 2010, Wikileaks leaked confidential diplomatic cables pertaining to the United States and its allies which revealed that the late Saudi King Abdullah urged the United States to attack Iran in order to destroy its potential nuclear weapons program, describing Iran as \"a snake whose head should be cut off without any procrastination.\""
+    ],
+    "groundTruth": [
+      "January 1979",
+      "1979"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57265526708984140094c2c0",
+      "title": "1973_oil_crisis",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0002",
+    "question": "What feature of the Amazon made people believe it couldn't have many inhabitants?",
+    "context": [
+      "For a long time, it was thought that the Amazon rainforest was only ever sparsely populated, as it was impossible to sustain a large population through agriculture given the poor soil. Archeologist Betty Meggers was a prominent proponent of this idea, as described in her book Amazonia: Man and Culture in a Counterfeit Paradise. She claimed that a population density of 0.2 inhabitants per square kilometre (0.52/sq mi) is the maximum that can be sustained in the rainforest through hunting, with agriculture needed to host a larger population. However, recent anthropological findings have suggested that the region was actually densely populated. Some 5 million people may have lived in the Amazon region in AD 1500, divided between dense coastal settlements, such as that at Marajó, and inland dwellers. By 1900 the population had fallen to 1 million and by the early 1980s it was less than 200,000."
+    ],
+    "groundTruth": [
+      "the poor soil",
+      "poor soil",
+      "poor soil."
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572847dd4b864d19001648bc",
+      "title": "Amazon_rainforest",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0003",
+    "question": "How much do estimations of the population during the plague vary?",
+    "context": [
+      "It is recognised that an epidemiological account of the plague is as important as an identification of symptoms, but researchers are hampered by the lack of reliable statistics from this period. Most work has been done on the spread of the plague in England, and even estimates of overall population at the start vary by over 100% as no census was undertaken between the time of publication of the Domesday Book and the year 1377. Estimates of plague victims are usually extrapolated from figures from the clergy."
+    ],
+    "groundTruth": [
+      "by over 100%",
+      "over 100%"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5726516a708984140094c225",
+      "title": "Black_Death",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0004",
+    "question": "Why is giving a defiant speech sometimes more harmful for the individual?",
+    "context": [
+      "Some civil disobedience defendants choose to make a defiant speech, or a speech explaining their actions, in allocution. In U.S. v. Burgos-Andujar, a defendant who was involved in a movement to stop military exercises by trespassing on U.S. Navy property argued to the court in allocution that \"the ones who are violating the greater law are the members of the Navy\". As a result, the judge increased her sentence from 40 to 60 days. This action was upheld because, according to the U.S. Court of Appeals for the First Circuit, her statement suggested a lack of remorse, an attempt to avoid responsibility for her actions, and even a likelihood of repeating her illegal actions. Some of the other allocution speeches given by the protesters complained about mistreatment from government officials."
+    ],
+    "groundTruth": [
+      "lack of remorse",
+      "the judge increased her sentence",
+      "statement suggested a lack of remorse"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5728f50baf94a219006a9e57",
+      "title": "Civil_disobedience",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0005",
+    "question": "If P = NP is unsolved, and reduction is applied to a known NP-complete problem vis a vis Π2 to  Π1, what conclusion can be drawn for Π1?",
+    "context": [
+      "If a problem X is in C and hard for C, then X is said to be complete for C. This means that X is the hardest problem in C. (Since many problems could be equally hard, one might say that X is one of the hardest problems in C.) Thus the class of NP-complete problems contains the most difficult problems in NP, in the sense that they are the ones most likely not to be in P. Because the problem P = NP is not solved, being able to reduce a known NP-complete problem, Π2, to another problem, Π1, would indicate that there is no known polynomial-time solution for Π1. This is because a polynomial-time solution to Π1 would yield a polynomial-time solution to Π2. Similarly, because all NP problems can be reduced to the set, finding an NP-complete problem that can be solved in polynomial time would mean that P = NP."
+    ],
+    "groundTruth": [
+      "there is no known polynomial-time solution",
+      "no known polynomial-time solution"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "56e1d9fee3433e14004231cd",
+      "title": "Computational_complexity_theory",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0006",
+    "question": "What kind of contract is given when the contractor is given a performance specification and must undertake the project from design to construction, while adhering to the performance specifications?",
+    "context": [
+      "The modern trend in design is toward integration of previously separated specialties, especially among large firms. In the past, architects, interior designers, engineers, developers, construction managers, and general contractors were more likely to be entirely separate companies, even in the larger firms. Presently, a firm that is nominally an \"architecture\" or \"construction management\" firm may have experts from all related fields as employees, or to have an associated company that provides each necessary skill. Thus, each such firm may offer itself as \"one-stop shopping\" for a construction project, from beginning to end. This is designated as a \"design build\" contract where the contractor is given a performance specification and must undertake the project from design to construction, while adhering to the performance specifications."
+    ],
+    "groundTruth": [
+      "\"design build\" contract",
+      "design build"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57274e0d708984140094dbe8",
+      "title": "Construction",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0007",
+    "question": "Where do ctenophores be found in large numbers?",
+    "context": [
+      "Ctenophores may be abundant during the summer months in some coastal locations, but in other places they are uncommon and difficult to find. In bays where they occur in very high numbers, predation by ctenophores may control the populations of small zooplanktonic organisms such as copepods, which might otherwise wipe out the phytoplankton (planktonic plants), which are a vital part of marine food chains. One ctenophore, Mnemiopsis, has accidentally been introduced into the Black Sea, where it is blamed for causing fish stocks to collapse by eating both fish larvae and organisms that would otherwise have fed the fish. The situation was aggravated by other factors, such as over-fishing and long-term environmental changes that promoted the growth of the Mnemiopsis population. The later accidental introduction of Beroe helped to mitigate the problem, as Beroe preys on other ctenophores."
+    ],
+    "groundTruth": [
+      "In bays",
+      "bays"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725c69738643c19005accbc",
+      "title": "Ctenophora",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0008",
+    "question": "What do redistribution mechanisms lead to?",
+    "context": [
+      "Economist Simon Kuznets argued that levels of economic inequality are in large part the result of stages of development. According to Kuznets, countries with low levels of development have relatively equal distributions of wealth. As a country develops, it acquires more capital, which leads to the owners of this capital having more wealth and income and introducing inequality. Eventually, through various possible redistribution mechanisms such as social welfare programs, more developed countries move back to lower levels of inequality."
+    ],
+    "groundTruth": [
+      "lower levels of inequality"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5729f24baf94a219006aa6e1",
+      "title": "Economic_inequality",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0009",
+    "question": "In 1972, did Norway end up joining the European Union?",
+    "context": [
+      "The principal Treaties that form the European Union began with common rules for coal and steel, and then atomic energy, but more complete and formal institutions were established through the Treaty of Rome 1957 and the Maastricht Treaty 1992 (now: TFEU). Minor amendments were made during the 1960s and 1970s. Major amending treaties were signed to complete the development of a single, internal market in the Single European Act 1986, to further the development of a more social Europe in the Treaty of Amsterdam 1997, and to make minor amendments to the relative power of member states in the EU institutions in the Treaty of Nice 2001 and the Treaty of Lisbon 2007. Since its establishment, more member states have joined through a series of accession treaties, from the UK, Ireland, Denmark and Norway in 1972 (though Norway did not end up joining), Greece in 1979, Spain and Portugal 1985, Austria, Finland, Norway and Sweden in 1994 (though again Norway failed to join, because of lack of support in the referendum), the Czech Republic, Cyprus, Estonia, Hungary, Latvia, Lithuania, Malta, Poland, Slovakia and Slovenia in 2004, Romania and Bulgaria in 2007 and Croatia in 2013. Greenland signed a Treaty in 1985 giving it a special status."
+    ],
+    "groundTruth": [
+      "in 1972 (though Norway did not end up joining)",
+      "not"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725cc38ec44d21400f3d5be",
+      "title": "European_Union_law",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0010",
+    "question": "What prohibits atoms from passing through each other?",
+    "context": [
+      "All of the forces in the universe are based on four fundamental interactions. The strong and weak forces are nuclear forces that act only at very short distances, and are responsible for the interactions between subatomic particles, including nucleons and compound nuclei. The electromagnetic force acts between electric charges, and the gravitational force acts between masses. All other forces in nature derive from these four fundamental interactions. For example, friction is a manifestation of the electromagnetic force acting between the atoms of two surfaces, and the Pauli exclusion principle, which does not permit atoms to pass through each other. Similarly, the forces in springs, modeled by Hooke's law, are the result of electromagnetic forces and the Exclusion Principle acting together to return an object to its equilibrium position. Centrifugal forces are acceleration forces that arise simply from the acceleration of rotating frames of reference.:12-11:359"
+    ],
+    "groundTruth": [
+      "Pauli exclusion principle",
+      "the Pauli exclusion principle"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5737804dc3c5551400e51f13",
+      "title": "Force",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0011",
+    "question": "What political response was convening in June/July 1754?",
+    "context": [
+      "An early important political response to the opening of hostilities was the convening of the Albany Congress in June and July, 1754. The goal of the congress was to formalize a unified front in trade and negotiations with various Indians, since allegiance of the various tribes and nations was seen to be pivotal in the success in the war that was unfolding. The plan that the delegates agreed to was never ratified by the colonial legislatures nor approved of by the crown. Nevertheless, the format of the congress and many specifics of the plan became the prototype for confederation during the War of Independence."
+    ],
+    "groundTruth": [
+      "Albany Congress",
+      "the opening of hostilities"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5733f5264776f419006615a3",
+      "title": "French_and_Indian_War",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0012",
+    "question": "When was the Tower Theatre built?",
+    "context": [
+      "The popular neighborhood known as the Tower District is centered around the historic Tower Theatre, which is included on the National List of Historic Places. The theater was built in 1939 and is at Olive and Wishon Avenues in the heart of the Tower District. (The name of the theater refers to a well-known landmark water tower, which is actually in another nearby area). The Tower District neighborhood is just north of downtown Fresno proper, and one-half mile south of Fresno City College. Although the neighborhood was known as a residential area prior, the early commercial establishments of the Tower District began with small shops and services that flocked to the area shortly after World War II. The character of small local businesses largely remains today. To some extent, the businesses of the Tower District were developed due to the proximity of the original Fresno Normal School, (later renamed California State University at Fresno). In 1916 the college moved to what is now the site of Fresno City College one-half mile north of the Tower District."
+    ],
+    "groundTruth": [
+      "1939"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725dd7d89a1e219009abfeb",
+      "title": "Fresno,_California",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0013",
+    "question": "Who is viewed as the first modern geologist?",
+    "context": [
+      "James Hutton is often viewed as the first modern geologist. In 1785 he presented a paper entitled Theory of the Earth to the Royal Society of Edinburgh. In his paper, he explained his theory that the Earth must be much older than had previously been supposed in order to allow enough time for mountains to be eroded and for sediments to form new rocks at the bottom of the sea, which in turn were raised up to become dry land. Hutton published a two-volume version of his ideas in 1795 (Vol. 1, Vol. 2)."
+    ],
+    "groundTruth": [
+      "James Hutton"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57268527708984140094c8bf",
+      "title": "Geology",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0014",
+    "question": "What criticism in NY times article that impacts the quality of Education at Harvard?",
+    "context": [
+      "The four-year, full-time undergraduate program comprises a minority of enrollments at the university and emphasizes instruction with an \"arts and sciences focus\". Between 1978 and 2008, entering students were required to complete a core curriculum of seven classes outside of their concentration. Since 2008, undergraduate students have been required to complete courses in eight General Education categories: Aesthetic and Interpretive Understanding, Culture and Belief, Empirical and Mathematical Reasoning, Ethical Reasoning, Science of Living Systems, Science of the Physical Universe, Societies of the World, and United States in the World. Harvard offers a comprehensive doctoral graduate program and there is a high level of coexistence between graduate and undergraduate degrees. The Carnegie Foundation for the Advancement of Teaching, The New York Times, and some students have criticized Harvard for its reliance on teaching fellows for some aspects of undergraduate education; they consider this to adversely affect the quality of education."
+    ],
+    "groundTruth": [
+      "reliance on teaching fellows"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5727d3843acd2414000ded6b",
+      "title": "Harvard_University",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0015",
+    "question": "What proclamation officially ended limited Huguenot autonomy?",
+    "context": [
+      "Montpellier was among the most important of the 66 \"villes de sûreté\" that the Edict of 1598 granted to the Huguenots. The city's political institutions and the university were all handed over to the Huguenots. Tension with Paris led to a siege by the royal army in 1622. Peace terms called for the dismantling of the city's fortifications. A royal citadel was built and the university and consulate were taken over by the Catholic party. Even before the Edict of Alès (1629), Protestant rule was dead and the ville de sûreté was no more.[citation needed]"
+    ],
+    "groundTruth": [
+      "Edict of Alès"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57106d2fb654c5140001f8f2",
+      "title": "Huguenot",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0016",
+    "question": "The speed of the killing response of the human immune system is a product of what process?",
+    "context": [
+      "In humans, this response is activated by complement binding to antibodies that have attached to these microbes or the binding of complement proteins to carbohydrates on the surfaces of microbes. This recognition signal triggers a rapid killing response. The speed of the response is a result of signal amplification that occurs following sequential proteolytic activation of complement molecules, which are also proteases. After complement proteins initially bind to the microbe, they activate their protease activity, which in turn activates other complement proteases, and so on. This produces a catalytic cascade that amplifies the initial signal by controlled positive feedback. The cascade results in the production of peptides that attract immune cells, increase vascular permeability, and opsonize (coat) the surface of a pathogen, marking it for destruction. This deposition of complement can also kill cells directly by disrupting their plasma membrane."
+    ],
+    "groundTruth": [
+      "signal amplification"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572a142e3f37b319004786ba",
+      "title": "Immune_system",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0017",
+    "question": "What profession were Ronald Robinson and John Gallagher?",
+    "context": [
+      "During the 20th century, historians John Gallagher (1919–1980) and Ronald Robinson (1920–1999) constructed a framework for understanding European imperialism. They claim that European imperialism was influential, and Europeans rejected the notion that \"imperialism\" required formal, legal control by one government over another country. \"In their view, historians have been mesmerized by formal empire and maps of the world with regions colored red. The bulk of British emigration, trade, and capital went to areas outside the formal British Empire. Key to their thinking is the idea of empire 'informally if possible and formally if necessary.'\"[attribution needed] Because of the resources made available by imperialism, the world's economy grew significantly and became much more interconnected in the decades before World War I, making the many imperial powers rich and prosperous."
+    ],
+    "groundTruth": [
+      "historians"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57309564069b5314008321a7",
+      "title": "Imperialism",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0018",
+    "question": "What did the IPCC apologize for?",
+    "context": [
+      "This projection was not included in the final summary for policymakers. The IPCC has since acknowledged that the date is incorrect, while reaffirming that the conclusion in the final summary was robust. They expressed regret for \"the poor application of well-established IPCC procedures in this instance\". The date of 2035 has been correctly quoted by the IPCC from the WWF report, which has misquoted its own source, an ICSI report \"Variations of Snow and Ice in the past and at present on a Global and Regional Scale\"."
+    ],
+    "groundTruth": [
+      "\"the poor application of well-established IPCC procedures in this instance\"",
+      "the poor application of well-established IPCC procedures",
+      "poor application of well-established IPCC procedures"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572940973f37b319004781a6",
+      "title": "Intergovernmental_Panel_on_Climate_Change",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0019",
+    "question": "Where did support from governmental and religious groups come from?",
+    "context": [
+      "The Taliban were spawned by the thousands of madrasahs the Deobandi movement established for impoverished Afghan refugees and supported by governmental and religious groups in neighboring Pakistan. The Taliban differed from other Islamist movements to the point where they might be more properly described as Islamic fundamentalist or neofundamentalist, interested in spreading \"an idealized and systematized version of conservative tribal village customs\" under the label of Sharia to an entire country. Their ideology was also described as being influenced by Wahhabism, and the extremist jihadism of their guest Osama bin Laden."
+    ],
+    "groundTruth": [
+      "Pakistan"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57302a3aa23a5019007fced0",
+      "title": "Islamism",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0020",
+    "question": "In what year did a tropical storm cause a four day loss of power to Jacksonville?",
+    "context": [
+      "Jacksonville has suffered less damage from hurricanes than most other east coast cities, although the threat does exist for a direct hit by a major hurricane. The city has only received one direct hit from a hurricane since 1871; however, Jacksonville has experienced hurricane or near-hurricane conditions more than a dozen times due to storms crossing the state from the Gulf of Mexico to the Atlantic Ocean, or passing to the north or south in the Atlantic and brushing past the area. The strongest effect on Jacksonville was from Hurricane Dora in 1964, the only recorded storm to hit the First Coast with sustained hurricane-force winds. The eye crossed St. Augustine with winds that had just barely diminished to 110 mph (180 km/h), making it a strong Category 2 on the Saffir-Simpson Scale. Jacksonville also suffered damage from 2008's Tropical Storm Fay which crisscrossed the state, bringing parts of Jacksonville under darkness for four days. Similarly, four years prior to this, Jacksonville was inundated by Hurricane Frances and Hurricane Jeanne, which made landfall south of the area. These tropical cyclones were the costliest indirect hits to Jacksonville. Hurricane Floyd in 1999 caused damage mainly to Jacksonville Beach. During Floyd, the Jacksonville Beach pier was severely damaged, and later demolished. The rebuilt pier was later damaged by Fay, but not destroyed. Tropical Storm Bonnie would cause minor damage in 2004, spawning a minor tornado in the process. On May 28, 2012, Jacksonville was hit by Tropical Storm Beryl, packing winds up to 70 miles per hour (113 km/h) which made landfall near Jacksonville Beach."
+    ],
+    "groundTruth": [
+      "2008",
+      "Fay"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572824f13acd2414000df593",
+      "title": "Jacksonville,_Florida",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0021",
+    "question": "What century did the Normans first gain their separate identity?",
+    "context": [
+      "The Normans (Norman: Nourmands; French: Normands; Latin: Normanni) were the people who in the 10th and 11th centuries gave their name to Normandy, a region in France. They were descended from Norse (\"Norman\" comes from \"Norseman\") raiders and pirates from Denmark, Iceland and Norway who, under their leader Rollo, agreed to swear fealty to King Charles III of West Francia. Through generations of assimilation and mixing with the native Frankish and Roman-Gaulish populations, their descendants would gradually merge with the Carolingian-based cultures of West Francia. The distinct cultural and ethnic identity of the Normans emerged initially in the first half of the 10th century, and it continued to evolve over the succeeding centuries."
+    ],
+    "groundTruth": [
+      "10th century",
+      "the first half of the 10th century",
+      "10th"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "56ddde6b9a695914005b962c",
+      "title": "Normans",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0022",
+    "question": "What did Philo incorrectly assume that the air became?",
+    "context": [
+      "One of the first known experiments on the relationship between combustion and air was conducted by the 2nd century BCE Greek writer on mechanics, Philo of Byzantium. In his work Pneumatica, Philo observed that inverting a vessel over a burning candle and surrounding the vessel's neck with water resulted in some water rising into the neck. Philo incorrectly surmised that parts of the air in the vessel were converted into the classical element fire and thus were able to escape through pores in the glass. Many centuries later Leonardo da Vinci built on Philo's work by observing that a portion of air is consumed during combustion and respiration."
+    ],
+    "groundTruth": [
+      "fire",
+      "the classical element fire"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "571c7abfdd7acb1400e4c0bb",
+      "title": "Oxygen",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0023",
+    "question": "How is circuit switching allocated ",
+    "context": [
+      "Packet switching contrasts with another principal networking paradigm, circuit switching, a method which pre-allocates dedicated network bandwidth specifically for each communication session, each having a constant bit rate and latency between nodes. In cases of billable services, such as cellular communication services, circuit switching is characterized by a fee per unit of connection time, even when no data is transferred, while packet switching may be characterized by a fee per unit of information transmitted, such as characters, packets, or messages."
+    ],
+    "groundTruth": [
+      "a method which pre-allocates dedicated network bandwidth",
+      "pre-allocates dedicated network bandwidth specifically for each communication session",
+      "pre-allocates"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572634a789a1e219009ac56d",
+      "title": "Packet_switching",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0024",
+    "question": "What responsibilities are pharmacists believed to be taking on more in the future?",
+    "context": [
+      "In the coming decades, pharmacists are expected to become more integral within the health care system. Rather than simply dispensing medication, pharmacists are increasingly expected to be compensated for their patient care skills. In particular, Medication Therapy Management (MTM) includes the clinical services that pharmacists can provide for their patients. Such services include the thorough analysis of all medication (prescription, non-prescription, and herbals) currently being taken by an individual. The result is a reconciliation of medication and patient education resulting in increased patient health outcomes and decreased costs to the health care system."
+    ],
+    "groundTruth": [
+      "increasingly expected to be compensated for their patient care skills",
+      "patient care skills",
+      "pharmacists are increasingly expected to be compensated for their patient care skills"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5726f868dd62a815002e9685",
+      "title": "Pharmacy",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0025",
+    "question": "Besides Leibniz, what other mathematician proved the validity of Fermat's little theorem?",
+    "context": [
+      "After the Greeks, little happened with the study of prime numbers until the 17th century. In 1640 Pierre de Fermat stated (without proof) Fermat's little theorem (later proved by Leibniz and Euler). Fermat also conjectured that all numbers of the form 22n + 1 are prime (they are called Fermat numbers) and he verified this up to n = 4 (or 216 + 1). However, the very next Fermat number 232 + 1 is composite (one of its prime factors is 641), as Euler discovered later, and in fact no further Fermat numbers are known to be prime. The French monk Marin Mersenne looked at primes of the form 2p − 1, with p a prime. They are called Mersenne primes in his honor."
+    ],
+    "groundTruth": [
+      "Euler"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57297a276aef051400154f89",
+      "title": "Prime_number",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0026",
+    "question": "How do academic results in former Model C schools compare to other schools?",
+    "context": [
+      "In the final years of the apartheid era, parents at white government schools were given the option to convert to a \"semi-private\" form called Model C, and many of these schools changed their admissions policies to accept children of other races. Following the transition to democracy, the legal form of \"Model C\" was abolished, however, the term continues to be used to describe government schools formerly reserved for white children.. These schools tend to produce better academic results than government schools formerly reserved for other race groups . Former \"Model C\" schools are not private schools, as they are state-controlled. All schools in South Africa (including both independent schools and public schools) have the right to set compulsory school fees, and formerly model C schools tend to set much higher school fees than other public schools."
+    ],
+    "groundTruth": [
+      "better",
+      "produce better academic results"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57275409708984140094dc36",
+      "title": "Private_school",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0027",
+    "question": "What delimits the delta of the Rhine in the East?",
+    "context": [
+      "The mouth of the Rhine into Lake Constance forms an inland delta. The delta is delimited in the West by the Alter Rhein (\"Old Rhine\") and in the East by a modern canalized section. Most of the delta is a nature reserve and bird sanctuary. It includes the Austrian towns of Gaißau, Höchst and Fußach. The natural Rhine originally branched into at least two arms and formed small islands by precipitating sediments. In the local Alemannic dialect, the singular is pronounced \"Isel\" and this is also the local pronunciation of Esel (\"Donkey\"). Many local fields have an official name containing this element."
+    ],
+    "groundTruth": [
+      "modern canalized section",
+      "modern canalized",
+      "canalized section"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572fe4a304bcaa1900d76e56",
+      "title": "Rhine",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0028",
+    "question": "What do the membership of the committees reflect?",
+    "context": [
+      "Committees comprise a small number of MSPs, with membership reflecting the balance of parties across Parliament. There are different committees with their functions set out in different ways. Mandatory Committees are committees which are set down under the Scottish Parliament's standing orders, which govern their remits and proceedings. The current Mandatory Committees in the fourth Session of the Scottish Parliament are: Public Audit; Equal Opportunities; European and External Relations; Finance; Public Petitions; Standards, Procedures and Public Appointments; and Delegated Powers and Law Reform."
+    ],
+    "groundTruth": [
+      "balance of parties",
+      "balance of parties across Parliament",
+      "the balance of parties across Parliament"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572fc78d04bcaa1900d76d08",
+      "title": "Scottish_Parliament",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0029",
+    "question": "What could the Supplemental Nutrition Assistance Program purchase?",
+    "context": [
+      "The Daily Mail newspaper reported in 2012 that the UK government's benefits agency was checking claimants' \"Sky TV bills to establish if a woman in receipt of benefits as a single mother is wrongly claiming to be living alone\" – as, it claimed, subscription to sports channels would betray a man's presence in the household. In December, the UK’s parliament heard a claim that a subscription to BSkyB was ‘often damaging’, along with alcohol, tobacco and gambling. Conservative MP Alec Shelbrooke was proposing the payments of benefits and tax credits on a \"Welfare Cash Card\", in the style of the Supplemental Nutrition Assistance Program, that could be used to buy only \"essentials\"."
+    ],
+    "groundTruth": [
+      "essentials",
+      "only \"essentials\""
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57097c8fed30961900e841f3",
+      "title": "Sky_(United_Kingdom)",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0030",
+    "question": "Other than its main central  business district, where are the majority of San Diego's business districts located?",
+    "context": [
+      "Downtown San Diego is the central business district of San Diego, though the city is filled with business districts. These include Carmel Valley, Del Mar Heights, Mission Valley, Rancho Bernardo, Sorrento Mesa, and University City. Most of these districts are located in Northern San Diego and some within North County regions."
+    ],
+    "groundTruth": [
+      "Northern San Diego"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57060f3e75f01819005e7923",
+      "title": "Southern_California",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0031",
+    "question": "What is an example of a steam-powered automobile?",
+    "context": [
+      "Steam engines can be said to have been the moving force behind the Industrial Revolution and saw widespread commercial use driving machinery in factories, mills and mines; powering pumping stations; and propelling transport appliances such as railway locomotives, ships, steamboats and road vehicles. Their use in agriculture led to an increase in the land available for cultivation. There have at one time or another been steam-powered farm tractors, motorcycles (without much success) and even automobiles as the Stanley Steamer."
+    ],
+    "groundTruth": [
+      "Stanley Steamer"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57114f0050c2381900b54a67",
+      "title": "Steam_engine",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0032",
+    "question": "What other locations can the Booth School of Business be found?",
+    "context": [
+      "The University of Chicago also maintains facilities apart from its main campus. The university's Booth School of Business maintains campuses in Singapore, London, and the downtown Streeterville neighborhood of Chicago. The Center in Paris, a campus located on the left bank of the Seine in Paris, hosts various undergraduate and graduate study programs. In fall 2010, the University of Chicago also opened a center in Beijing, near Renmin University's campus in Haidian District. The most recent additions are a center in New Delhi, India, which opened in 2014, and a center in Hong Kong which opened in 2015."
+    ],
+    "groundTruth": [
+      "Singapore, London, and the downtown Streeterville neighborhood of Chicago"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57284e9fff5b5019007da150",
+      "title": "University_of_Chicago",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0033",
+    "question": "How much did the gross agricultural product increase from 2003-04?",
+    "context": [
+      "During 2003–04, the gross value of Victorian agricultural production increased by 17% to $8.7 billion. This represented 24% of national agricultural production total gross value. As of 2004, an estimated 32,463 farms occupied around 136,000 square kilometres (52,500 sq mi) of Victorian land. This comprises more than 60% of the state's total land surface. Victorian farms range from small horticultural outfits to large-scale livestock and grain productions. A quarter of farmland is used to grow consumable crops."
+    ],
+    "groundTruth": [
+      "$8.7 billion",
+      "24%"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "570d50a5fed7b91900d45e7d",
+      "title": "Victoria_(Australia)",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0034",
+    "question": "What building from the 19th century was destroyed between the 1950s and 1960s?",
+    "context": [
+      "Warsaw's mixture of architectural styles reflects the turbulent history of the city and country. During the Second World War, Warsaw was razed to the ground by bombing raids and planned destruction. After liberation, rebuilding began as in other cities of the communist-ruled PRL. Most of the historical buildings were thoroughly reconstructed. However, some of the buildings from the 19th century that had been preserved in reasonably reconstructible form were nonetheless eradicated in the 1950s and 1960s (e.g. Leopold Kronenberg Palace). Mass residential blocks were erected, with basic design typical of Eastern bloc countries."
+    ],
+    "groundTruth": [
+      "Leopold Kronenberg Palace"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57335fcad058e614000b5973",
+      "title": "Warsaw",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0035",
+    "question": "Where did Mongke Khan attack the Song dynasty?",
+    "context": [
+      "Möngke Khan commenced a military campaign against the Chinese Song dynasty in southern China. The Mongol force that invaded southern China was far greater than the force they sent to invade the Middle East in 1256. He died in 1259 without a successor. Kublai returned from fighting the Song in 1260 when he learned that his brother, Ariq Böke, was challenging his claim to the throne. Kublai convened a kurultai in Kaiping that elected him Great Khan. A rival kurultai in Mongolia proclaimed Ariq Böke Great Khan, beginning a civil war. Kublai depended on the cooperation of his Chinese subjects to ensure that his army received ample resources. He bolstered his popularity among his subjects by modeling his government on the bureaucracy of traditional Chinese dynasties and adopting the Chinese era name of Zhongtong. Ariq Böke was hampered by inadequate supplies and surrendered in 1264. All of the three western khanates (Golden Horde, Chagatai Khanate and Ilkhanate) became functionally autonomous, although only the Ilkhans truly recognized Kublai as Great Khan. Civil strife had permanently divided the Mongol Empire."
+    ],
+    "groundTruth": [
+      "southern China",
+      "in southern China"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "572867212ca10214002da2f3",
+      "title": "Yuan_dynasty",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0036",
+    "question": "Why did the European nations and Japan separated themselves from United States during the crisis?",
+    "context": [
+      "The crisis had a major impact on international relations and created a rift within NATO. Some European nations and Japan sought to disassociate themselves from United States foreign policy in the Middle East to avoid being targeted by the boycott. Arab oil producers linked any future policy changes to peace between the belligerents. To address this, the Nixon Administration began multilateral negotiations with the combatants. They arranged for Israel to pull back from the Sinai Peninsula and the Golan Heights. By January 18, 1974, US Secretary of State Henry Kissinger had negotiated an Israeli troop withdrawal from parts of the Sinai Peninsula. The promise of a negotiated settlement between Israel and Syria was enough to convince Arab oil producers to lift the embargo in March 1974."
+    ],
+    "groundTruth": [
+      "to avoid being targeted by the boycott"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725b5a689a1e219009abd28",
+      "title": "1973_oil_crisis",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0037",
+    "question": "In which direction did the water on the eastern side flow?",
+    "context": [
+      "During the mid-Eocene, it is believed that the drainage basin of the Amazon was split along the middle of the continent by the Purus Arch. Water on the eastern side flowed toward the Atlantic, while to the west water flowed toward the Pacific across the Amazonas Basin. As the Andes Mountains rose, however, a large basin was created that enclosed a lake; now known as the Solimões Basin. Within the last 5–10 million years, this accumulating water broke through the Purus Arch, joining the easterly flow toward the Atlantic."
+    ],
+    "groundTruth": [
+      "Water on the eastern side flowed toward the Atlantic,",
+      "toward the Atlantic"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725c071271a42140099d128",
+      "title": "Amazon_rainforest",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0038",
+    "question": "What was Shrewsbury's conclusion?",
+    "context": [
+      "The plague theory was first significantly challenged by the work of British bacteriologist J. F. D. Shrewsbury in 1970, who noted that the reported rates of mortality in rural areas during the 14th-century pandemic were inconsistent with the modern bubonic plague, leading him to conclude that contemporary accounts were exaggerations. In 1984 zoologist Graham Twigg produced the first major work to challenge the bubonic plague theory directly, and his doubts about the identity of the Black Death have been taken up by a number of authors, including Samuel K. Cohn, Jr. (2002), David Herlihy (1997), and Susan Scott and Christopher Duncan (2001)."
+    ],
+    "groundTruth": [
+      "contemporary accounts were exaggerations"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5726509bdd62a815002e815c",
+      "title": "Black_Death",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0039",
+    "question": "What type of civil disobedience is larger scale?",
+    "context": [
+      "Non-revolutionary civil disobedience is a simple disobedience of laws on the grounds that they are judged \"wrong\" by an individual conscience, or as part of an effort to render certain laws ineffective, to cause their repeal, or to exert pressure to get one's political wishes on some other issue. Revolutionary civil disobedience is more of an active attempt to overthrow a government (or to change cultural traditions, social customs, religious beliefs, etc...revolution doesn't have to be political, i.e. \"cultural revolution\", it simply implies sweeping and widespread change to a section of the social fabric). Gandhi's acts have been described as revolutionary civil disobedience. It has been claimed that the Hungarians under Ferenc Deák directed revolutionary civil disobedience against the Austrian government. Thoreau also wrote of civil disobedience accomplishing \"peaceable revolution.\" Howard Zinn, Harvey Wheeler, and others have identified the right espoused in The Declaration of Independence to \"alter or abolish\" an unjust government to be a principle of civil disobedience. "
+    ],
+    "groundTruth": [
+      "Revolutionary civil disobedience",
+      "Revolutionary"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5728e07e3acd2414000e00ec",
+      "title": "Civil_disobedience",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0040",
+    "question": "What function is used by algorithms to define measurements like time or space?",
+    "context": [
+      "Many important complexity classes can be defined by bounding the time or space used by the algorithm. Some important complexity classes of decision problems defined in this manner are the following:"
+    ],
+    "groundTruth": [
+      "bounding"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "56e1c3e1e3433e1400423149",
+      "title": "Computational_complexity_theory",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0041",
+    "question": "Who studies the expected monetary flow over the life of the project and to monitor the payouts throughout the process?",
+    "context": [
+      "Mortgage bankers, accountants, and cost engineers are likely participants in creating an overall plan for the financial management of the building construction project. The presence of the mortgage banker is highly likely, even in relatively small projects since the owner's equity in the property is the most obvious source of funding for a building project. Accountants act to study the expected monetary flow over the life of the project and to monitor the payouts throughout the process. Cost engineers and estimators apply expertise to relate the work and materials involved to a proper valuation. Cost overruns with government projects have occurred when the contractor identified change orders or project changes that increased costs, which are not subject to competition from other firms as they have already been eliminated from consideration after the initial bid."
+    ],
+    "groundTruth": [
+      "Accountants"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5727502f708984140094dc09",
+      "title": "Construction",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0042",
+    "question": "What is the most distinctive feature of ctenophora?",
+    "context": [
+      "Ctenophora (/tᵻˈnɒfərə/; singular ctenophore, /ˈtɛnəfɔːr/ or /ˈtiːnəfɔːr/; from the Greek κτείς kteis 'comb' and φέρω pherō 'carry'; commonly known as comb jellies) is a phylum of animals that live in marine waters worldwide. Their most distinctive feature is the ‘combs’ – groups of cilia which they use for swimming – they are the largest animals that swim by means of cilia. Adults of various species range from a few millimeters to 1.5 m (4 ft 11 in) in size. Like cnidarians, their bodies consist of a mass of jelly, with one layer of cells on the outside and another lining the internal cavity. In ctenophores, these layers are two cells deep, while those in cnidarians are only one cell deep. Some authors combined ctenophores and cnidarians in one phylum, Coelenterata, as both groups rely on water flow through the body cavity for both digestion and respiration. Increasing awareness of the differences persuaded more recent authors to classify them as separate phyla."
+    ],
+    "groundTruth": [
+      "‘combs’ – groups of cilia",
+      "combs",
+      "the ‘combs’"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725c0f289a1e219009abdf6",
+      "title": "Ctenophora",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0043",
+    "question": "What impact did the high school education movement have on the presence of skilled workers?",
+    "context": [
+      "During the mass high school education movement from 1910–1940, there was an increase in skilled workers, which led to a decrease in the price of skilled labor. High school education during the period was designed to equip students with necessary skill sets to be able to perform at work. In fact, it differs from the present high school education, which is regarded as a stepping-stone to acquire college and advanced degrees. This decrease in wages caused a period of compression and decreased inequality between skilled and unskilled workers. Education is very important for the growth of the economy, however educational inequality in gender also influence towards the economy. Lagerlof and Galor stated that gender inequality in education can result to low economic growth, and continued gender inequality in education, thus creating a poverty trap. It is suggested that a large gap in male and female education may indicate backwardness and so may be associated with lower economic growth, which can explain why there is economic inequality between countries."
+    ],
+    "groundTruth": [
+      "increase",
+      "an increase"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5727f2714b864d1900164073",
+      "title": "Economic_inequality",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0044",
+    "question": "What is the minimum percent of alcohol content a German law requires all spirits and liqueurs to have?",
+    "context": [
+      "Often rules apply to all goods neutrally, but may have a greater practical effect on imports than domestic products. For such \"indirect\" discriminatory (or \"indistinctly applicable\") measures the Court of Justice has developed more justifications: either those in article 36, or additional \"mandatory\" or \"overriding\" requirements such as consumer protection, improving labour standards, protecting the environment, press diversity, fairness in commerce, and more: the categories are not closed. In the most famous case Rewe-Zentral AG v Bundesmonopol für Branntwein, the Court of Justice found that a German law requiring all spirits and liqueurs (not just imported ones) to have a minimum alcohol content of 25 per cent was contrary to TFEU article 34, because it had a greater negative effect on imports. German liqueurs were over 25 per cent alcohol, but Cassis de Dijon, which Rewe-Zentrale AG wished to import from France, only had 15 to 20 per cent alcohol. The Court of Justice rejected the German government's arguments that the measure proportionately protected public health under TFEU article 36, because stronger beverages were available and adequate labelling would be enough for consumers to understand what they bought. This rule primarily applies to requirements about a product's content or packaging. In Walter Rau Lebensmittelwerke v De Smedt PVBA the Court of Justice found that a Belgian law requiring all margarine to be in cube shaped packages infringed article 34, and was not justified by the pursuit of consumer protection. The argument that Belgians would believe it was butter if it was not cube shaped was disproportionate: it would \"considerably exceed the requirements of the object in view\" and labelling would protect consumers \"just as effectively\". In a 2003 case, Commission v Italy Italian law required that cocoa products that included other vegetable fats could not be labelled as \"chocolate\". It had to be \"chocolate substitute\". All Italian chocolate was made from cocoa butter alone, but British, Danish and Irish manufacturers used other vegetable fats. They claimed the law infringed article 34. The Court of Justice held that a low content of vegetable fat did not justify a \"chocolate substitute\" label. This was derogatory in the consumers' eyes. A ‘neutral and objective statement’ was enough to protect consumers. If member states place considerable obstacles on the use of a product, this can also infringe article 34. So, in a 2009 case, Commission v Italy, the Court of Justice held that an Italian law prohibiting motorcycles or mopeds pulling trailers infringed article 34. Again, the law applied neutrally to everyone, but disproportionately affected importers, because Italian companies did not make trailers. This was not a product requirement, but the Court reasoned that the prohibition would deter people from buying it: it would have \"a considerable influence on the behaviour of consumers\" that \"affects the access of that product to the market\". It would require justification under article 36, or as a mandatory requirement."
+    ],
+    "groundTruth": [
+      "25",
+      "25 per cent"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5726b929f1498d1400e8e8e8",
+      "title": "European_Union_law",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0045",
+    "question": "What geometric shape is used in equations to determine net force?",
+    "context": [
+      "Historically, forces were first quantitatively investigated in conditions of static equilibrium where several forces canceled each other out. Such experiments demonstrate the crucial properties that forces are additive vector quantities: they have magnitude and direction. When two forces act on a point particle, the resulting force, the resultant (also called the net force), can be determined by following the parallelogram rule of vector addition: the addition of two vectors represented by sides of a parallelogram, gives an equivalent resultant vector that is equal in magnitude and direction to the transversal of the parallelogram. The magnitude of the resultant varies from the difference of the magnitudes of the two forces to their sum, depending on the angle between their lines of action. However, if the forces are acting on an extended body, their respective lines of application must also be specified in order to account for their effects on the motion of the body."
+    ],
+    "groundTruth": [
+      "parallelogram"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57376a1bc3c5551400e51ec7",
+      "title": "Force",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0046",
+    "question": "What was the Seven Years War?",
+    "context": [
+      "The conflict is known by multiple names. In British America, wars were often named after the sitting British monarch, such as King William's War or Queen Anne's War. As there had already been a King George's War in the 1740s, British colonists named the second war in King George's reign after their opponents, and it became known as the French and Indian War. This traditional name continues as the standard in the United States, but it obscures the fact that Indians fought on both sides of the conflict, and that this was part of the Seven Years' War, a much larger conflict between France and Great Britain. American historians generally use the traditional name or sometimes the Seven Years' War. Other, less frequently used names for the war include the Fourth Intercolonial War and the Great War for the Empire."
+    ],
+    "groundTruth": [
+      "much larger conflict between France and Great Britain",
+      "conflict between France and Great Britain",
+      "in King George's reign",
+      "a much larger conflict between France and Great Britain"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5733d3cb4776f419006612ec",
+      "title": "French_and_Indian_War",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0047",
+    "question": "In what year did Fresno experience the most rainfall?",
+    "context": [
+      "The official record high temperature for Fresno is 115 °F (46.1 °C), set on July 8, 1905, while the official record low is 17 °F (−8 °C), set on January 6, 1913. The average windows for 100 °F (37.8 °C)+, 90 °F (32.2 °C)+, and freezing temperatures are June 1 thru September 13, April 26 thru October 9, and December 10 thru January 28, respectively, and no freeze occurred between in the 1983/1984 season. Annual rainfall has ranged from 23.57 inches (598.7 mm) in the “rain year” from July 1982 to June 1983 down to 4.43 inches (112.5 mm) from July 1933 to June 1934. The most rainfall in one month was 9.54 inches (242.3 mm) in November 1885 and the most rainfall in 24 hours 3.55 inches (90.2 mm) on November 18, 1885. Measurable precipitation falls on an average of 48 days annually. Snow is a rarity; the heaviest snowfall at the airport was 2.2 inches (0.06 m) on January 21, 1962."
+    ],
+    "groundTruth": [
+      "1885",
+      "July 1982 to June 1983"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5725f6e138643c19005acf1b",
+      "title": "Fresno,_California",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0048",
+    "question": "What type of correlation was used previously to help date rock formations?",
+    "context": [
+      "At the beginning of the 20th century, important advancement in geological science was facilitated by the ability to obtain accurate absolute dates to geologic events using radioactive isotopes and other methods. This changed the understanding of geologic time. Previously, geologists could only use fossils and stratigraphic correlation to date sections of rock relative to one another. With isotopic dates it became possible to assign absolute ages to rock units, and these absolute dates could be applied to fossil sequences in which there was datable material, converting the old relative ages into new absolute ages."
+    ],
+    "groundTruth": [
+      "stratigraphic correlation",
+      "stratigraphic"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57266c015951b619008f7238",
+      "title": "Geology",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0049",
+    "question": "What organization arranged to founding of school?",
+    "context": [
+      "Harvard was formed in 1636 by vote of the Great and General Court of the Massachusetts Bay Colony. It was initially called \"New College\" or \"the college at New Towne\". In 1638, the college became home for North America's first known printing press, carried by the ship John of London. In 1639, the college was renamed Harvard College after deceased clergyman John Harvard, who was an alumnus of the University of Cambridge. He had left the school £779 and his library of some 400 books. The charter creating the Harvard Corporation was granted in 1650."
+    ],
+    "groundTruth": [
+      "Massachusetts Bay Colony",
+      "Great and General Court of the Massachusetts Bay Colony"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5727afa82ca10214002d93c3",
+      "title": "Harvard_University",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0050",
+    "question": "By what other name was the Gate known?",
+    "context": [
+      "In this last connection, the name could suggest the derogatory inference of superstitious worship; popular fancy held that Huguon, the gate of King Hugo, was haunted by the ghost of le roi Huguet (regarded by Roman Catholics as an infamous scoundrel) and other spirits, who instead of being in Purgatory came back to harm the living at night. It was in this place in Tours that the prétendus réformés (\"these supposedly 'reformed'\") habitually gathered at night, both for political purposes, and for prayer and singing psalms. Such explanations have been traced to the contemporary, Reguier de la Plancha (d. 1560), who in De l'Estat de France offered the following account as to the origin of the name, as cited by The Cape Monthly:"
+    ],
+    "groundTruth": [
+      "Huguon"
+    ],
+    "answerable": true,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "57108ee6a58dae1900cd6a1b",
+      "title": "Huguenot",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0051",
+    "question": "What increased demand for cars with six cylinder engines?",
+    "context": [
+      "The crisis reduced the demand for large cars. Japanese imports, primarily the Toyota Corona, the Toyota Corolla, the Datsun B210, the Datsun 510, the Honda Civic, the Mitsubishi Galant (a captive import from Chrysler sold as the Dodge Colt), the Subaru DL, and later the Honda Accord all had four cylinder engines that were more fuel efficient than the typical American V8 and six cylinder engines. Japanese imports became mass-market leaders with unibody construction and front-wheel drive, which became de facto standards."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5a38cd93a4b263001a8c192d",
+      "title": "1973_oil_crisis",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0052",
+    "question": "Who is drawing maps of their inset ancestral lands?",
+    "context": [
+      "The use of remote sensing for the conservation of the Amazon is also being used by the indigenous tribes of the basin to protect their tribal lands from commercial interests. Using handheld GPS devices and programs like Google Earth, members of the Trio Tribe, who live in the rainforests of southern Suriname, map out their ancestral lands to help strengthen their territorial claims. Currently, most tribes in the Amazon do not have clearly defined boundaries, making it easier for commercial ventures to target their territories."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5a0c96fbf5590b0018dab48a",
+      "title": "Amazon_rainforest",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0053",
+    "question": "What percentage of people died during the Great Plague of London in 1665?",
+    "context": [
+      "In England, in the absence of census figures, historians propose a range of preincident population figures from as high as 7 million to as low as 4 million in 1300, and a postincident population figure as low as 2 million. By the end of 1350, the Black Death subsided, but it never really died out in England. Over the next few hundred years, further outbreaks occurred in 1361–62, 1369, 1379–83, 1389–93, and throughout the first half of the 15th century. An outbreak in 1471 took as much as 10–15% of the population, while the death rate of the plague of 1479–80 could have been as high as 20%. The most general outbreaks in Tudor and Stuart England seem to have begun in 1498, 1535, 1543, 1563, 1589, 1603, 1625, and 1636, and ended with the Great Plague of London in 1665."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5a2ed246a83784001a7d24e4",
+      "title": "Black_Death",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0054",
+    "question": "Who does Sophocles defy?",
+    "context": [
+      "One of the oldest depictions of civil disobedience is in Sophocles' play Antigone, in which Antigone, one of the daughters of former King of Thebes, Oedipus, defies Creon, the current King of Thebes, who is trying to stop her from giving her brother Polynices a proper burial. She gives a stirring speech in which she tells him that she must obey her conscience rather than human law. She is not at all afraid of the death he threatens her with (and eventually carries out), but she is afraid of how her conscience will smite her if she does not do this."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5a664314c2b11c001a425edb",
+      "title": "Civil_disobedience",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0055",
+    "question": "What is the graph isolation problem? ",
+    "context": [
+      "The graph isomorphism problem is the computational problem of determining whether two finite graphs are isomorphic. An important unsolved problem in complexity theory is whether the graph isomorphism problem is in P, NP-complete, or NP-intermediate. The answer is not known, but it is believed that the problem is at least not NP-complete. If graph isomorphism is NP-complete, the polynomial time hierarchy collapses to its second level. Since it is widely believed that the polynomial hierarchy does not collapse to any finite level, it is believed that graph isomorphism is not NP-complete. The best algorithm for this problem, due to Laszlo Babai and Eugene Luks has run time 2O(√(n log(n))) for graphs with n vertices."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5ad569c05b96ef001a10ae36",
+      "title": "Computational_complexity_theory",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0056",
+    "question": "What happens in a phase 2 contract?",
+    "context": [
+      "The owner produces a list of requirements for a project, giving an overall view of the project's goals. Several D&B contractors present different ideas about how to accomplish these goals. The owner selects the ideas he or she likes best and hires the appropriate contractor. Often, it is not just one contractor, but a consortium of several contractors working together. Once these have been hired, they begin building the first phase of the project. As they build phase 1, they design phase 2. This is in contrast to a design-bid-build contract, where the project is completely designed by the owner, then bid on, then completed."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5a25eed2c93d92001a40034b",
+      "title": "Construction",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0057",
+    "question": "How do plankton reproduce?",
+    "context": [
+      "Most species are hermaphrodites—a single animal can produce both eggs and sperm, meaning it can fertilize its own egg, not needing a mate. Some are simultaneous hermaphrodites, which can produce both eggs and sperm at the same time. Others are sequential hermaphrodites, in which the eggs and sperm mature at different times. Fertilization is generally external, although platyctenids' eggs are fertilized inside their parents' bodies and kept there until they hatch. The young are generally planktonic and in most species look like miniature cydippids, gradually changing into their adult shapes as they grow. The exceptions are the beroids, whose young are miniature beroids with large mouths and no tentacles, and the platyctenids, whose young live as cydippid-like plankton until they reach near-adult size, but then sink to the bottom and rapidly metamorphose into the adult form. In at least some species, juveniles are capable of reproduction before reaching the adult size and shape. The combination of hermaphroditism and early reproduction enables small populations to grow at an explosive rate."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5a834caae60761001a2eb539",
+      "title": "Ctenophora",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0058",
+    "question": "Who rejected an index of health and social problems?",
+    "context": [
+      "In recent years the characteristic that has strongly correlated with health in developed countries is income inequality. Creating an index of \"Health and Social Problems\" from nine factors, authors Richard Wilkinson and Kate Pickett found health and social problems \"more common in countries with bigger income inequalities\", and more common among states in the US with larger income inequalities. Other studies have confirmed this relationship. The UNICEF index of \"child well-being in rich countries\", studying 40 indicators in 22 countries, correlates with greater equality but not per capita income."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5ad25f42d7d075001a428f73",
+      "title": "Economic_inequality",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0059",
+    "question": "What was developed in the 1980's by the social partners representatives?",
+    "context": [
+      "The Social Chapter is a chapter of the 1997 Treaty of Amsterdam covering social policy issues in European Union law. The basis for the Social Chapter was developed in 1989 by the \"social partners\" representatives, namely UNICE, the employers' confederation, the European Trade Union Confederation (ETUC) and CEEP, the European Centre of Public Enterprises. A toned down version was adopted as the Social Charter at the 1989 Strasbourg European Council. The Social Charter declares 30 general principles, including on fair remuneration of employment, health and safety at work, rights of disabled and elderly, the rights of workers, on vocational training and improvements of living conditions. The Social Charter became the basis for European Community legislation on these issues in 40 pieces of legislation."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5ad14b2e645df0001a2d15ec",
+      "title": "European_Union_law",
+      "split": "validation"
+    }
+  },
+  {
+    "id": "RAG-0060",
+    "question": "What notion causes one to deal with classical variables instead of operators?",
+    "context": [
+      "The notion \"force\" keeps its meaning in quantum mechanics, though one is now dealing with operators instead of classical variables and though the physics is now described by the Schrödinger equation instead of Newtonian equations. This has the consequence that the results of a measurement are now sometimes \"quantized\", i.e. they appear in discrete portions. This is, of course, difficult to imagine in the context of \"forces\". However, the potentials V(x,y,z) or fields, from which the forces generally can be derived, are treated similar to classical position variables, i.e., ."
+    ],
+    "groundTruth": [],
+    "answerable": false,
+    "source": "squad_v2",
+    "metadata": {
+      "squadId": "5ad2772cd7d075001a42953f",
+      "title": "Force",
+      "split": "validation"
+    }
+  }
+]

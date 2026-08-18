@@ -1,0 +1,32 @@
+{
+  "name": "rag_qa_playwright",
+  "version": "1.0.0",
+  "description": "RAG QA end-2-end with Playwright",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:dataset": "playwright test tests/dataset",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pgundlupetvenkatesh/rag_qa_playwright.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pgundlupetvenkatesh/rag_qa_playwright/issues"
+  },
+  "homepage": "https://github.com/pgundlupetvenkatesh/rag_qa_playwright#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}
