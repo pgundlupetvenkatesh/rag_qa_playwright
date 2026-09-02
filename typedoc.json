@@ -1,0 +1,23 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+
+  // "expand" walks src/ and documents every module it finds, so modules added
+  // in later milestones appear without editing this file.
+  "entryPoints": ["src"],
+  "entryPointStrategy": "expand",
+
+  "out": "docs/api",
+  "name": "rag_qa_playwright API",
+
+  // The dataset contract is the thing consumers read; surface it first.
+  "categorizeByGroup": true,
+  "navigation": { "includeCategories": true },
+
+  // Fail the build on broken {@link} targets rather than emitting dead links.
+  "validation": {
+    "invalidLink": true,
+    "notExported": true,
+    "notDocumented": false
+  },
+  "treatValidationWarningsAsErrors": true
+}

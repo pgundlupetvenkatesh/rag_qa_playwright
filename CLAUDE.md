@@ -27,6 +27,7 @@ npm install
 npm test                    # full Playwright suite
 npm run test:dataset        # dataset validation only
 npm run typecheck           # tsc --noEmit
+npm run docs                # TypeDoc -> docs/api (generated, gitignored)
 npx playwright test tests/dataset/ragDataset.spec.ts:29   # single test by line
 
 # Dataset regeneration (Python, only when changing selection logic)
@@ -71,7 +72,15 @@ Changing the seed, the sort, or the pass order changes the dataset.
   transpiles specs itself.
 - The package is CommonJS. Do **not** enable `verbatimModuleSyntax` — it conflicts with ESM syntax in
   a CJS package and breaks every file.
-- TypeScript is 7.x (the native port). It typechecks this codebase cleanly, but it is new; if odd
-  compiler behaviour appears, pinning to 5.x is a reasonable fallback.
+- **TypeScript is held at `^5.9.3` (i.e. `<6.0.0`) deliberately — do not upgrade to 7.x.** TypeDoc reads the
+  TypeScript compiler API directly, and the 7.x native port does not expose the surface it needs
+  (`typedoc@0.28.20` peer-supports `5.0.x`–`6.0.x`, and forcing past that crashes on import with
+  `Cannot read properties of undefined (reading 'SyntaxKind')`). The codebase itself typechecks
+  cleanly under both. Revisit only when TypeDoc ships TS 7 support.
 - `datasetLoader.ts` accumulates all validation issues and reports them together rather than throwing
   on the first fault. Keep that behaviour when extending it.
+- Doc comments are **TSDoc, not JSDoc**. Cross-references are `{@link Foo}`; a bare `{Foo}` after
+  `@throws`/`@param` is malformed and renders as literal text. `typedoc.json` sets
+  `treatValidationWarningsAsErrors`, so `npm run docs` fails on a broken `{@link}` target.
+- `typedoc.json` uses `entryPointStrategy: "expand"` over `src`, so new modules are documented
+  automatically — no entry-point list to maintain as later milestones land.

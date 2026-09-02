@@ -113,6 +113,20 @@ npm run test:dataset        # or: npx playwright test tests/dataset
 
 Asserts the counts, id uniqueness, and the answerable/`groundTruth` invariants.
 
+### Generate the API documentation
+
+```bash
+npm run docs
+```
+
+Runs [TypeDoc](https://typedoc.org) over `src/`, writing a browsable HTML reference to
+`docs/api/` (generated, not committed — open `docs/api/index.html`). Doc comments are
+TSDoc, so cross-references use `{@link Foo}`; the build fails on a `{@link}` that
+does not resolve, rather than emitting a dead link.
+
+> **TypeScript is held at `^5.9.3` for this.** TypeDoc reads the TypeScript compiler API
+> directly and does not yet support the 7.x native port.
+
 Other commands:
 
 ```bash
@@ -128,6 +142,8 @@ scripts/prepareDataset.py         SQuAD 2.0 -> normalized JSON
 src/models/ragTestCase.ts         normalized test case contract
 src/utils/datasetLoader.ts        loads + validates the golden dataset
 tests/dataset/ragDataset.spec.ts  dataset validation test
+typedoc.json                      API documentation config
+docs/api/                         generated API reference (gitignored)
 ```
 
 ## Planned

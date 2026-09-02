@@ -11,3 +11,6 @@ blob-report/
 
 # JetBrains IDE
 .idea/
+
+# Generated API documentation (run: npm run docs)
+docs/api/

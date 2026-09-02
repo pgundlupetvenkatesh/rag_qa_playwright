@@ -122,8 +122,8 @@ function parseTestCase(value: unknown, index: number, issues: string[]): RagTest
 /**
  * Reads, parses and validates the golden dataset.
  *
- * @throws {DatasetValidationError} if the file is missing, is not valid JSON,
- * is not an array, contains a malformed case, or repeats an id.
+ * @throws {@link DatasetValidationError} if the file is missing, is not valid
+ * JSON, is not an array, contains a malformed case, or repeats an id.
  */
 export function loadRagTestCases(datasetPath: string = DEFAULT_DATASET_PATH): RagTestCase[] {
   let raw: string;
