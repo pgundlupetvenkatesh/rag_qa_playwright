@@ -7,7 +7,8 @@ description: >-
   golden dataset, and before committing/opening a PR. Covers the
   groundTruth/answerable invariant, dataset determinism, the RagTestCase
   contract, the generated-but-committed dataset, error accumulation in the
-  loader, TSDoc/TypeDoc rules, and the TypeScript version pin. Complements
+  loader, TSDoc/TypeDoc rules, the TypeScript version pin, and references to
+  other projects left behind by copied-in files. Complements
   (does not replace) the built-in /code-review for generic bugs.
 ---
 
@@ -105,7 +106,29 @@ non-null assertions (`!`), or `as` casts introduced to silence the compiler
 rather than to express a real narrowing. Indexed access returns `T | undefined`
 here by design — code must handle it, not assert it away.
 
-### 10. CLAUDE.md drift
+### 10. No cross-project references
+Files copied in from another checkout drag its name, stack terms, and doc
+references along. None of it means anything here, and it goes stale silently
+because nothing in this repo exercises it. Flag any mention of another
+repository, its tooling, or its documentation — in prose, code comments, or
+config — and restate the point in this project's own terms.
+
+`.claude/hooks/guard-foreign-refs.sh` blocks a commit that introduces one,
+deriving the names from sibling checkouts at run time so no foreign name is
+hard-coded here. Two limits it cannot cover, which is where this check earns
+its place:
+- It only inspects **staged** changes. A reference already sitting in the tree
+  never trips it.
+- It matches repository *names*. A borrowed stack term, a URL, or a sentence
+  describing another project's setup reads as ordinary prose to it.
+
+When reviewing a file copied in from elsewhere, read its **comments and prose**,
+not just its logic — that is where these survive longest.
+
+If a mention is genuinely needed, add the name to `.claude/allowed-refs.txt`
+(one per line) rather than weakening the hook.
+
+### 11. CLAUDE.md drift
 If the change adds/removes/renames a module, script, command, npm script,
 convention, gotcha, or dependency — or lands a milestone — CLAUDE.md likely
 needs updating. Note it and hand off to the `update-claude-md` skill; don't

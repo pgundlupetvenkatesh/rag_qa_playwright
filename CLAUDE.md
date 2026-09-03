@@ -104,8 +104,11 @@ Changing the seed, the sort, or the pass order changes the dataset.
 - `skills/update-claude-md` — how to reconcile this file after a significant change.
 - `hooks/guard-commit.sh` — blocks `git commit` when a `.env` file or credential-shaped token is
   staged (`PreToolUse`).
+- `hooks/guard-foreign-refs.sh` — blocks `git commit` when staged changes name another repository.
+  The names are derived from sibling checkouts at run time, so none is hard-coded here; add a
+  legitimate one to `.claude/allowed-refs.txt`.
 - `hooks/claude-md-reminder.sh` — on `Stop`, flags that `src/` or `scripts/` changed while CLAUDE.md
-  did not. Both hooks are fail-open and loop-safe.
+  did not. All hooks are fail-open and loop-safe.
 
 ## Working style
 

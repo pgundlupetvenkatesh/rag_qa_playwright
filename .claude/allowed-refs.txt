@@ -1,0 +1,4 @@
+# Repository names that may legitimately appear in this project's files.
+# One per line; blank lines and # comments ignored. Read by
+# .claude/hooks/guard-foreign-refs.sh. Empty by default — add a name only when
+# the reference genuinely belongs here, not to silence a finding.
