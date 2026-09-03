@@ -29,8 +29,8 @@ $staged
 EOF
 
 # 2) High-confidence credential signatures in the staged additions. Deliberately
-#    narrow (real token shapes, not generic key=value) so placeholders like the
-#    README's TMDB_API_KEY=your_api_key_here don't trip it.
+#    narrow (real token shapes, not generic key=value) so documentation placeholders
+#    like API_KEY=your_api_key_here do not trip it.
 if git diff --cached -U0 2>/dev/null | grep -E '^\+' | grep -Eq \
    '(-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})'; then
   problems="${problems}  - credential-like token in staged diff"$'\n'

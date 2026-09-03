@@ -91,8 +91,8 @@ Changing the seed, the sort, or the pass order changes the dataset.
   cleanly under both. Revisit only when TypeDoc ships TS 7 support.
 - `tsconfig.json` sets `noEmit`, so nothing emits `.d.ts`. Any tool that consumes declaration files
   (e.g. API Extractor) needs its own build config — it cannot reuse this one as-is.
-- This repo does **not** auto-delete branches on PR merge (`delete_branch_on_merge` is off, unlike
-  `mdb_api_layer`). Delete both the local and the remote branch yourself after a PR merges.
+- This repo does **not** auto-delete branches on PR merge (`delete_branch_on_merge` is off). Delete
+  both the local and the remote branch yourself after a PR merges.
 
 ## Project tooling
 
