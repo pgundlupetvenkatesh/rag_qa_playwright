@@ -2,17 +2,16 @@
 
 RAG QA end-2-end with Playwright.
 
-A reusable AI/RAG quality-engineering framework built on Playwright + TypeScript. It is
-designed to test **existing** RAG applications — this repository does not contain a RAG
+A reusable AI/RAG QA Engineering framework built on Playwright + TypeScript. It is
+designed to test **existing** RAG applications — this repo does not contain a RAG
 application of its own.
 
 ## Golden Dataset
 
-The current milestone covers only the golden evaluation dataset: loading SQuAD 2.0,
-normalizing a small slice of it, and validating that slice from a Playwright test.
+Loading SQuAD 2.0, normalizing a small slice of it, and validating that slice from a Playwright test.
 No RAG client, retrieval scoring, adversarial testing, or UI/API tests exist yet.
 
-### What SQuAD 2.0 is
+### SQuAD 2.0?
 
 [SQuAD 2.0](https://huggingface.co/datasets/rajpurkar/squad_v2) (Stanford Question
 Answering Dataset) is a reading-comprehension benchmark. Each record pairs a question
@@ -20,7 +19,7 @@ with a paragraph of context drawn from a Wikipedia article. Version 2.0's defini
 feature is that it extends the original dataset with **unanswerable** questions —
 questions that look plausible against the context but have no supported answer in it.
 
-### Why we use it for RAG QA
+### Why use it for RAG QA
 
 A RAG system has two failure modes, and SQuAD 2.0 exercises both with human-verified
 ground truth:
@@ -29,30 +28,30 @@ ground truth:
   its answer in it.
 - **Unanswerable cases** test whether the system *abstains*. A RAG system that
   confidently answers an unanswerable question is hallucinating, and this is precisely
-  the behaviour that generic QA benchmarks miss.
+  the behavior that generic QA benchmarks miss.
 
 Because each case ships with its own context passage, we get retrieval ground truth for
 free — later milestones can score whether a system under test retrieved the right
 passage, not just whether its final answer looked reasonable.
 
-We use the `validation` split only; the training split is deliberately excluded, since
+We use only the SQuAD `validation` split; the training split is deliberately excluded, since
 models under test are far more likely to have memorized it.
 
 ### Dataset composition
 
 `data/golden/rag_test_cases.json` contains **60 test cases**:
 
-| Kind | Count | `groundTruth` |
-| --- | --- | --- |
-| Answerable | 50 | one or more accepted answer strings |
-| Unanswerable | 10 | empty array |
+| Kind         | Count | `groundTruth`                       |
+|--------------|-------|-------------------------------------|
+| Answerable   | 50    | one or more accepted answer strings |
+| Unanswerable | 10    | empty array                         |
 
 Selection is **deterministic** (fixed seed, round-robin across SQuAD article titles), so
 re-running the preparation script reproduces the same 60 cases byte-for-byte. The
 selection spans all 35 article titles in the validation split, with unique question and
 context text in every case, rather than 60 consecutive records from one topic.
 
-Each case has this shape:
+Shape of each case:
 
 ```json
 {
@@ -80,7 +79,7 @@ Questions and contexts are copied from SQuAD verbatim — never summarized or re
 npm install
 ```
 
-### Python (only needed to regenerate the dataset)
+### Python (only for dataset regeneration)
 
 The generated JSON is committed, so you only need this to rebuild it.
 
@@ -119,13 +118,12 @@ Asserts the counts, id uniqueness, and the answerable/`groundTruth` invariants.
 npm run docs
 ```
 
-Runs [TypeDoc](https://typedoc.org) over `src/`, writing a browsable HTML reference to
-`docs/api/` (generated, not committed — open `docs/api/index.html`). Doc comments are
-TSDoc, so cross-references use `{@link Foo}`; the build fails on a `{@link}` that
+Runs [TypeDoc](https://typedoc.org) over `src/` and writes a browsable HTML reference to
+`docs/api/index.html`. Doc comments are TSDoc, so cross-references use `{@link Foo}`; the build fails on a `{@link}` that
 does not resolve, rather than emitting a dead link.
 
-> **TypeScript is held at `^5.9.3` for this.** TypeDoc reads the TypeScript compiler API
-> directly and does not yet support the 7.x native port.
+> TypeScript is pinned to `^5.9.3` as `TypeDoc` reads the TypeScript compiler API
+> directly and does not natively yet support 7.x
 
 Other commands:
 
