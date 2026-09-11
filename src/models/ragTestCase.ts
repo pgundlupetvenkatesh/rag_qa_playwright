@@ -22,6 +22,14 @@ export interface RagTestCaseMetadata {
   readonly split: string;
 }
 
+/**
+ * A single golden evaluation case: a question, the passages it must be
+ * answered from, and the accepted answers (empty when the correct behaviour
+ * is to abstain).
+ *
+ * Invariant: `groundTruth` is empty if and only if `answerable` is false.
+ * Enforced by the dataset generator and the loader, not by the type.
+ */
 export interface RagTestCase {
   /** Stable framework id, e.g. "RAG-0001". Unique across the dataset. */
   readonly id: string;
