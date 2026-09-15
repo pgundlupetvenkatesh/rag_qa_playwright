@@ -71,6 +71,58 @@ Shape of each case:
 
 Questions and contexts are copied from SQuAD verbatim — never summarized or reformatted.
 
+### Why round-robin selection
+
+Sixty cases should represent the whole validation split, not a couple of Wikipedia
+articles. The committed dataset shows the effect:
+
+| Pass         | Cases | Distinct titles | Max per title |
+|--------------|-------|-----------------|---------------|
+| Answerable   | 50    | 35              | 2             |
+| Unanswerable | 10    | 10              | 1             |
+
+SQuAD is stored article by article. Each article has a handful of paragraphs, each
+paragraph carries several questions written against the same text, and the articles are
+very unequal in size. That structure defeats the two obvious ways of picking a subset:
+
+- **A consecutive slice** of the first 60 rows comes almost entirely from one article,
+  with many questions sharing the same paragraph.
+- **A uniform random sample** inherits the size imbalance. Large articles dominate in
+  proportion to their question count, popular paragraphs are picked repeatedly, and with
+  only 60 draws several small articles are missed by chance.
+
+Round-robin treats articles, not questions, as the unit of fairness. Each lap gives every
+article one turn, so after one lap the dataset spans every topic. Only once every article
+has contributed does the second lap hand out second slots. Article size no longer affects
+how often it appears.
+
+This matters for a RAG benchmark because retrieval quality is only meaningful if the
+questions probe different regions of the corpus. If most questions target the same
+passage, a retriever that ranks that passage well looks better than it is. Abstention
+behaviour and grounding also vary by subject, and a narrow sample hides that variance.
+
+Round-robin alone is not enough; three other mechanisms in `select_round_robin` make it
+work:
+
+- **Within-article randomness.** Each article's queue is shuffled with the seeded
+  generator before the laps begin. Otherwise every lap would take the first paragraph of
+  every article, usually the lead section.
+- **Duplicate rejection.** A candidate is skipped if its normalized question or its exact
+  context has already been used. This pushes second-lap picks onto different paragraphs.
+  The used sets are shared across both passes, so the unanswerable pass cannot land on a
+  passage the answerable pass already claimed.
+- **Determinism.** Titles are visited in sorted order and each queue is sorted by record
+  id before the shuffle, so the seeded generator sees identical input on every run.
+  Changing the seed, the sorts, or the pass order changes the dataset.
+
+The trade-off is that this is not a statistical sample of the split. An article with 300
+questions and one with 30 are weighted the same, so the overall score does not mirror
+SQuAD's natural topic mix. For a quality-engineering fixture that is the right choice:
+the goal is broad, reproducible, hand-inspectable coverage, not an unbiased estimate of
+performance on SQuAD as a whole. The generator also fails loudly if the corpus ever
+becomes too small or too duplicated to fill the quota, rather than silently returning
+fewer cases.
+
 ## Setup
 
 ### Node
