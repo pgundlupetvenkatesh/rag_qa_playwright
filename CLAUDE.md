@@ -76,6 +76,9 @@ Changing the seed, the sort, or the pass order changes the dataset.
 - Doc comments are **TSDoc, not JSDoc**. Cross-references are `{@link Foo}`; a bare `{Foo}` after
   `@throws`/`@param` is malformed and renders as literal text. `typedoc.json` sets
   `treatValidationWarningsAsErrors`, so `npm run docs` fails on a broken `{@link}` target.
+- Python docstrings in `scripts/` are Sphinx-style reStructuredText: `:param:`/`:type:`/`:returns:`/
+  `:rtype:`/`:raises:` field lists and `:func:` cross-references. Nothing renders them yet; the
+  style is for consistency and a future autodoc build.
 - `typedoc.json` uses `entryPointStrategy: "expand"` over `src`, so new modules are documented
   automatically. This is deliberate — it avoids the hand-maintained entry-point list that a
   Sphinx-style `automodule` setup requires. Don't replace it with an explicit `entryPoints` array.

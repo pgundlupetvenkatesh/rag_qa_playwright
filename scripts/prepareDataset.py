@@ -44,6 +44,22 @@ def normalize_question(question: str) -> str:
 
     Lowercases, strips accents and punctuation, and collapses whitespace, so
     "Who was Beyonce's father?" and "who was beyonce s father" collide.
+
+    The key is used only by :func:`select_round_robin` to decide whether a
+    candidate is a near-copy of a question already selected. It is never
+    stored; the question text written to the dataset is the verbatim
+    original.
+
+    The folding is deliberately lossy (``resume`` and ``résumé`` collide, as
+    do ``Who's`` and ``Whos``), which is the right trade-off for duplicate
+    detection but makes it unsuitable for any semantic comparison. Because
+    the key feeds the seeded selection, changing this function changes which
+    cases are selected and breaks byte-for-byte reproducibility.
+
+    :param question: Question text as it appears in SQuAD.
+    :type question: str
+    :returns: Lowercase, accent-free, punctuation-free key with single spaces.
+    :rtype: str
     """
     folded = unicodedata.normalize("NFKD", question)
     folded = "".join(ch for ch in folded if not unicodedata.combining(ch))
@@ -52,7 +68,23 @@ def normalize_question(question: str) -> str:
 
 
 def dedupe_preserving_order(values: Iterable[str]) -> list[str]:
-    """SQuAD validation records carry several annotator answers, often identical."""
+    """Remove repeated strings while keeping the first occurrence in place.
+
+    SQuAD validation records carry several annotator answers, often identical.
+    :func:`to_test_case` uses this to collapse them into the case's
+    ``groundTruth`` list.
+
+    A plain ``list(set(values))`` would also de-duplicate but does not
+    guarantee order, and ``groundTruth`` order is part of the committed JSON
+    that must reproduce byte-for-byte. Comparison is exact: unlike
+    :func:`normalize_question`, nothing is lowercased or stripped, so answers
+    differing only by case or punctuation are both kept as accepted variants.
+
+    :param values: Answer strings in annotator order.
+    :type values: Iterable[str]
+    :returns: The distinct strings, in order of first appearance.
+    :rtype: list[str]
+    """
     seen: set[str] = set()
     unique: list[str] = []
     for value in values:
@@ -63,6 +95,23 @@ def dedupe_preserving_order(values: Iterable[str]) -> list[str]:
 
 
 def group_by_title(records: Iterable[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Bucket SQuAD records by the Wikipedia article they came from.
+
+    :func:`select_round_robin` takes one record per title per pass, so the
+    selected cases spread across topics instead of clustering in the few
+    articles with the most questions. This builds the per-title queues it
+    draws from.
+
+    Records keep their original relative order within each bucket, and the
+    title order follows first appearance in ``records``. Neither is relied on
+    for determinism: :func:`select_round_robin` sorts titles and sorts each
+    bucket by record id before shuffling.
+
+    :param records: Raw SQuAD records, each carrying a ``title`` key.
+    :type records: Iterable[dict[str, Any]]
+    :returns: Mapping from article title to the records under it.
+    :rtype: dict[str, list[dict[str, Any]]]
+    """
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         grouped[record["title"]].append(record)
@@ -78,8 +127,37 @@ def select_round_robin(
 ) -> list[dict[str, Any]]:
     """Take one record per title per pass until the quota is filled.
 
-    Records already matching a used question key or a used context are skipped,
-    which keeps topics spread across articles instead of clustering.
+    Titles are visited in sorted order. Each title's bucket is sorted by record
+    id and then shuffled with ``rng`` so the seeded shuffle sees identical input
+    on every run; that sort is what makes selection reproducible. On each lap
+    the first acceptable record from every title is taken, which spreads cases
+    across articles instead of clustering in the ones with the most questions.
+
+    A record is skipped, and discarded for good, when its
+    :func:`normalize_question` key is already in ``used_questions`` or its
+    context passage is already in ``used_contexts``. Both sets are mutated in
+    place. :func:`main` passes the same sets and the same ``rng`` to the
+    answerable and unanswerable passes, so the second pass cannot reuse a
+    passage or a near-duplicate question claimed by the first. Changing the
+    seed, the quota, the sort keys, or the order of the two passes changes the
+    committed dataset.
+
+    :param grouped: Records bucketed by article title, as returned by
+        :func:`group_by_title`.
+    :type grouped: dict[str, list[dict[str, Any]]]
+    :param quota: Number of records to select.
+    :type quota: int
+    :param rng: Seeded generator used to shuffle each title's bucket.
+    :type rng: random.Random
+    :param used_questions: Normalized question keys already claimed. Updated
+        in place.
+    :type used_questions: set[str]
+    :param used_contexts: Context passages already claimed. Updated in place.
+    :type used_contexts: set[str]
+    :returns: Exactly ``quota`` records in selection order.
+    :rtype: list[dict[str, Any]]
+    :raises RuntimeError: If every bucket is exhausted or fully de-duplicated
+        before ``quota`` records have been selected.
     """
     titles = sorted(grouped)
     queues: dict[str, list[dict[str, Any]]] = {}
@@ -120,7 +198,31 @@ def select_round_robin(
 def to_test_case(record: dict[str, Any], index: int, answerable: bool) -> dict[str, Any]:
     """Map a raw SQuAD record onto the normalized schema.
 
+    This is the single point where the Python side commits to the contract
+    declared by ``RagTestCase`` in ``src/models/ragTestCase.ts``. The key
+    names emitted here (``groundTruth``, ``squadId``, ``context`` as a list)
+    are checked by name in the TypeScript loader, so renaming one breaks
+    every downstream consumer.
+
     Question and context are copied verbatim - never reformatted or summarized.
+    The context is wrapped in a single-element list because retrieval
+    evaluation deals in multiple passages; SQuAD supplies exactly one.
+
+    ``groundTruth`` is empty if and only if ``answerable`` is false. The flag
+    is supplied by the caller, which knows which pool the record came from;
+    the answers are never inspected to infer it. For answerable records the
+    annotator answers are de-duplicated with :func:`dedupe_preserving_order`.
+
+    :param record: Raw SQuAD record with its native keys (``id``, ``title``,
+        ``question``, ``context``, ``answers``).
+    :type record: dict[str, Any]
+    :param index: One-based position in the final dataset, used to build the
+        zero-padded ``RAG-NNNN`` id.
+    :type index: int
+    :param answerable: ``False`` for SQuAD 2.0 unanswerable questions.
+    :type answerable: bool
+    :returns: A JSON-serialisable dict in the ``RagTestCase`` shape.
+    :rtype: dict[str, Any]
     """
     ground_truth = dedupe_preserving_order(record["answers"]["text"]) if answerable else []
     return {
