@@ -164,6 +164,19 @@ npm run test:dataset        # or: npx playwright test tests/dataset
 
 Asserts the counts, id uniqueness, and the answerable/`groundTruth` invariants.
 
+The spec tests the contract, not the content. It does not check the text of any case, the
+title spread, or a checksum of the file: exact content would duplicate the fixture in the
+test and fail on every legitimate regeneration, while git already surfaces any change to
+the committed JSON in the diff. What it guards against is the realistic failure modes of a
+generated-but-committed file: a hand edit that drops an answer, a merge that duplicates a
+block, a partial regeneration, or a generator change that shifts the answerable split.
+
+Every later milestone will start by loading this dataset, so this spec is the smoke test
+that runs first. If it fails, there is no point running retrieval scoring or adversarial
+prompts, because the fixture they would score against is broken. That is why it exists as
+a separate, fast, browser-free suite rather than as a precondition buried inside a future
+evaluation test.
+
 ### Generate the API documentation
 
 ```bash
