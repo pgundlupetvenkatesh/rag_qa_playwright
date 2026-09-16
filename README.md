@@ -71,6 +71,30 @@ Shape of each case:
 
 Questions and contexts are copied from SQuAD verbatim — never summarized or reformatted.
 
+Field by field:
+
+| Field         | Type       | What it is                                                                                                                                                            |
+|---------------|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `id`          | `string`   | Stable framework id, `RAG-0001` to `RAG-0060`. Unique across the file; results in later milestones are keyed on it.                                                   |
+| `question`    | `string`   | The user query, verbatim from SQuAD. This is what gets sent to the system under test.                                                                                 |
+| `context`     | `string[]` | The passage the answer must be grounded in. Always one element today, but an array so retrieval evaluation can hold several passages later without a breaking change. |
+| `groundTruth` | `string[]` | Accepted answer strings. One or more for answerable cases, exactly empty for unanswerable ones. Empty means the correct behaviour is to abstain.                      |
+| `answerable`  | `boolean`  | Whether the question can be answered from the context. `false` for SQuAD 2.0's deliberately unanswerable questions.                                                   |
+| `source`      | `string`   | Upstream dataset identifier, always `squad_v2`. Checked against an exported constant so provenance cannot drift silently.                                             |
+| `metadata`    | `object`   | Trail back to the original record, see below.                                                                                                                         |
+
+The `metadata` object:
+
+| Field     | What it is |
+|-----------|------------|
+| `squadId` | The original SQuAD record id, for looking up the source row when a case fails. |
+| `title`   | The Wikipedia article title, e.g. `1973_oil_crisis`. Doubles as a topic label. |
+| `split`   | Always `validation`. Training data is excluded so the benchmark cannot leak into a model's training set. |
+
+`groundTruth` and `answerable` must agree: `groundTruth` is empty if and only if
+`answerable` is `false`. The rule is enforced three times, in the Python generator before
+writing, in the TypeScript loader on read, and in the spec as named tests.
+
 ### Why round-robin selection
 
 Sixty cases should represent the whole validation split, not a couple of Wikipedia
