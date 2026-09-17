@@ -1,0 +1,4 @@
+# Python dependencies for golden dataset preparation (scripts/prepareDataset.py).
+# The `datasets` library pulls in pyarrow/pandas, which is how the SQuAD 2.0
+# parquet files are read - we never parse them by hand.
+datasets>=4.0.0
