@@ -11,6 +11,39 @@ application of its own.
 Loading SQuAD 2.0, normalizing a small slice of it, and validating that slice from a Playwright test.
 No RAG client, retrieval scoring, adversarial testing, or UI/API tests exist yet.
 
+### How the pieces fit
+
+```
+SQuAD 2.0 (Hugging Face)
+        │
+        ▼
+scripts/prepareDataset.py        Python: select 60 records, normalize to RagTestCase
+        │
+        ▼
+data/golden/rag_test_cases.json  generated, committed
+        │
+        ▼
+src/utils/datasetLoader.ts       TypeScript: read, validate structure, type as RagTestCase[]
+        │
+        ▼
+tests/dataset/ragDataset.spec.ts Playwright: assert composition, invariants, provenance
+```
+
+1. **Python normalizes.** `scripts/prepareDataset.py` downloads SQuAD, selects the cases,
+   and rewrites each one into the `RagTestCase` shape. This is the only step that
+   transforms data, and Node is not involved in it.
+2. **The loader validates.** `src/utils/datasetLoader.ts` reads the committed JSON, checks
+   every field, and returns a typed array. It throws with every fault listed if anything
+   is wrong.
+3. **Playwright asserts.** `tests/dataset/ragDataset.spec.ts` loads through that loader and
+   asserts the counts, the `groundTruth`/`answerable` invariant, and the provenance.
+
+Playwright is used here purely as a test runner, the role Jest or Vitest would otherwise
+fill. `playwright.config.ts` declares no browser project, and the spec never touches a
+`page`. It is Playwright rather than a lighter runner because later milestones will drive
+real RAG applications through their UI and API, and using it from the start means one
+runner, one reporter, and one `npm test` for the whole framework.
+
 ### SQuAD 2.0?
 
 [SQuAD 2.0](https://huggingface.co/datasets/rajpurkar/squad_v2) (Stanford Question
