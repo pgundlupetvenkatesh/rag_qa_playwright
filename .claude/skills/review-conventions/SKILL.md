@@ -3,11 +3,12 @@ name: review-conventions
 description: >-
   Review changes to this RAG QA framework against its own conventions and
   invariants — the project-specific checks that generic code review misses.
-  Use after writing or editing anything under src/, scripts/, tests/, or the
-  golden dataset, and before committing/opening a PR. Covers the
-  groundTruth/answerable invariant, dataset determinism, the RagTestCase
-  contract, the generated-but-committed dataset, error accumulation in the
-  loader, TSDoc/TypeDoc rules, the TypeScript version pin, and references to
+  Use after writing or editing anything under src/, scripts/, tests/,
+  rag_service/, or the golden dataset, and before committing/opening a PR.
+  Covers the groundTruth/answerable invariant, dataset determinism, the
+  RagTestCase contract, the generated-but-committed dataset, error
+  accumulation in the loader, TSDoc/TypeDoc rules, the TypeScript version pin,
+  the rag_service HTTP-only boundary and label-free corpus, and references to
   other projects left behind by copied-in files. Complements
   (does not replace) the built-in /code-review for generic bugs.
 ---
@@ -128,7 +129,39 @@ not just its logic — that is where these survive longest.
 If a mention is genuinely needed, add the name to `.claude/allowed-refs.txt`
 (one per line) rather than weakening the hook.
 
-### 11. CLAUDE.md drift
+### 11. rag_service/ stays a separate, label-free SUT
+`rag_service/` is a reference system under test, not part of the framework.
+Flag any of these:
+- **Cross-imports.** TS under `src/` or `tests/` importing from `rag_service/`,
+  or service code reading `src/`. The only coupling is HTTP; anything else
+  stops the framework working against an external RAG app.
+- **Label leakage.** Service code (app, ingest, tests fixtures that seed the
+  store) reading `data/golden/`, or putting questions, `groundTruth`, or
+  `answerable` into the corpus or its metadata. Grep `rag_service/` for
+  `golden`, `groundTruth`, `answerable`.
+- **Wire-format drift.** A response model not derived from `ApiModel` in
+  `rag_service/app/schemas.py` emits snake_case and silently breaks the
+  camelCase contract the TS side reads.
+- **Config bypass.** Handlers reading `os.environ` directly instead of taking
+  `Settings` through the `get_settings` dependency — tests can no longer
+  override it.
+- **Env/secret hygiene.** A real key in `rag_service/.env.example`, the key
+  logged or returned (it is a `SecretStr`; `/ready` reports only
+  "configured"), `rag_service/` dependencies added to the repo-root
+  `requirements.txt` (the two venvs are deliberately separate), or service
+  ignore rules added to the root `.gitignore` instead of
+  `rag_service/.gitignore`. The test client dependency is `httpx2` on
+  purpose — don't accept a change back to `httpx`.
+- **Unverified model ids.** Code or docs that treat `GROQ_MODEL`'s default as
+  known-good. Availability is per Groq account; `/ready` is what verifies it.
+- **Chunking vs. the embedding window.** all-MiniLM-L6-v2 embeds at most 256
+  tokens and truncates silently. Raising the `CHUNK_SIZE` default well past
+  1000 characters makes long passages only partly searchable — flag it unless
+  that is the stated intent. Chunks split passages, so a retrieval check that
+  compares chunk text to a golden `context` for equality is wrong; it must
+  match on the chunk's parent-passage id.
+
+### 12. CLAUDE.md drift
 If the change adds/removes/renames a module, script, command, npm script,
 convention, gotcha, or dependency — or lands a milestone — CLAUDE.md likely
 needs updating. Note it and hand off to the `update-claude-md` skill; don't

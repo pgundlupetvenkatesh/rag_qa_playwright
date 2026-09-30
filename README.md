@@ -3,8 +3,11 @@
 RAG QA end-2-end with Playwright.
 
 A reusable AI/RAG QA Engineering framework built on Playwright + TypeScript. It is
-designed to test **existing** RAG applications — this repo does not contain a RAG
-application of its own.
+designed to test RAG applications through their API and UI, without depending on
+any particular one. To have something real to test, the repo also ships a small
+**reference RAG service** in [`rag_service/`](#reference-rag-service). It is a
+separate Python component that the framework reaches only over HTTP, exactly as
+it would reach an external application.
 
 ## Golden Dataset
 
@@ -180,6 +183,35 @@ performance on SQuAD as a whole. The generator also fails loudly if the corpus e
 becomes too small or too duplicated to fill the quota, rather than silently returning
 fewer cases.
 
+## Reference RAG service
+
+`rag_service/` is a lightweight RAG application written in Python with FastAPI. It
+is the system under test for the Playwright API suite. It is being built in small
+steps. So far it has only its configuration and two probes:
+
+| Endpoint      | Meaning                                                                                 |
+|---------------|-----------------------------------------------------------------------------------------|
+| `GET /health` | Liveness: 200 while the process is up.                                                  |
+| `GET /ready`  | Readiness: 200 or 503, depending on whether a Groq key is set, whether Groq confirms the configured model exists for that key, and whether the Chroma directory is usable. |
+
+Retrieval over a ChromaDB store and answer generation through Groq come next.
+[`rag_service/README.md`](rag_service/README.md) has the full setup, the list of
+configuration variables, and how to run it.
+
+Two rules keep it honest as a test target:
+
+- **HTTP is the only coupling.** The TypeScript framework never imports from
+  `rag_service/`, and the service never reads `src/`. Pointing the tests at a
+  different RAG application should need nothing more than a different base URL.
+- **Evaluation labels stay out of the corpus.** The service never reads
+  `data/golden/`, so questions, accepted answers, and the `answerable` flag are
+  never visible to it. If the corpus contained the answers, every retrieval test
+  would pass trivially.
+
+The Groq model id is configurable, and the default (`openai/gpt-oss-20b`) is not
+assumed to work. Which models a key can use depends on the Groq account, so
+`/ready` asks Groq and reports whether the configured model is available.
+
 ## Setup
 
 ### Node
@@ -200,6 +232,20 @@ pip install -r requirements.txt
 
 The single dependency is Hugging Face [`datasets`](https://pypi.org/project/datasets/),
 which downloads and reads the SQuAD 2.0 parquet files for us.
+
+### Python (reference RAG service)
+
+The service has its own requirements and virtualenv, kept apart from the dataset one,
+and runs on Python 3.13 (pinned in `rag_service/.python-version`). With
+[uv](https://docs.astral.sh/uv/):
+
+```bash
+cd rag_service
+uv venv .venv                  # picks up Python 3.13 from .python-version
+source .venv/bin/activate
+uv pip install -r requirements.txt
+cp .env.example .env           # then set GROQ_API_KEY; .env is gitignored
+```
 
 ## Usage
 
@@ -234,6 +280,21 @@ prompts, because the fixture they would score against is broken. That is why it 
 a separate, fast, browser-free suite rather than as a precondition buried inside a future
 evaluation test.
 
+### Run and test the reference RAG service
+
+From `rag_service/` with its virtualenv active:
+
+```bash
+pytest                              # service unit tests (offline)
+python -m app                       # serve on API_HOST:API_PORT, default 127.0.0.1:8000
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/ready
+```
+
+The unit tests ignore `.env` and the shell environment, inject settings through FastAPI's
+dependency overrides, and replace Groq with a mock HTTP transport. They need neither a
+key nor a network connection.
+
 ### Generate the API documentation
 
 ```bash
@@ -264,10 +325,16 @@ src/utils/datasetLoader.ts        loads + validates the golden dataset
 tests/dataset/ragDataset.spec.ts  dataset validation test
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
+rag_service/app/                  reference RAG service: FastAPI app, settings, readiness checks
+rag_service/tests/                service unit tests (pytest)
+rag_service/requirements.txt      service Python dependencies
+rag_service/.env.example          placeholder-only template for the gitignored rag_service/.env
+rag_service/README.md             service setup, configuration, run
 ```
 
 ## Planned
 
-Not yet implemented: Ragas (RAG evaluation), Promptfoo (LLM/adversarial testing),
-Allure (reporting), Langfuse (observability), and the Playwright UI/API adapters for
-driving a system under test.
+Not yet implemented: retrieval and answer generation in the reference RAG service,
+the Playwright API adapter and API tests that drive it, Ragas (RAG evaluation),
+Promptfoo (LLM/adversarial testing), Allure (reporting), Langfuse (observability),
+and UI tests.
