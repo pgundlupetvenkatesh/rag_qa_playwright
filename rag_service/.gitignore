@@ -1,0 +1,30 @@
+# Service-local ignores, kept here so the repo-root .gitignore stays untouched.
+
+# Secrets: real env files and credential material. .env.example is the
+# committed, placeholder-only template.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python virtualenv and tool caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local vector store, rebuilt by ingest
+.chroma/
+
+# Model and dataset caches, if HF_HOME / XDG_CACHE_HOME are pointed inside the
+# service. By default Chroma's ONNX model lives in ~/.cache/chroma, outside the repo.
+.cache/
+
+# Generated artifacts
+*.log
+build/
+dist/
+*.egg-info/

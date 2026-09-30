@@ -1,0 +1,1 @@
+"""Reference RAG service: the system under test for the Playwright API suite."""
