@@ -138,7 +138,20 @@ Flag any of these:
 - **Label leakage.** Service code (app, ingest, tests fixtures that seed the
   store) reading `data/golden/`, or putting questions, `groundTruth`, or
   `answerable` into the corpus or its metadata. Grep `rag_service/` for
-  `golden`, `groundTruth`, `answerable`.
+  `golden`, `groundTruth`, `answerable`. Two guards must stay closed:
+  `DocumentMetadata` in `schemas.py` is an allowlist with `extra="forbid"`
+  (adding a free-form `dict` field reopens the leak), and
+  `scripts/ingest_squad.py` selects only the `title`/`context` columns.
+- **Ingestion idempotency.** `Corpus.ingest` must keep the order "upsert new
+  chunks, then delete leftover ids", the `<documentId>#<chunkIndex>` id scheme,
+  and a fingerprint covering text, metadata, chunk params and embedding model.
+  Deleting first, randomising ids, or dropping a field from the fingerprint
+  brings back stale or duplicate chunks. Writes stay under `Corpus._lock`.
+- **Destructive endpoints.** Anything that deletes corpus data must go through
+  the `ALLOW_RESET` guard in `main.py`, which checks the TCP peer address, not
+  `API_HOST`.
+- **Real model in unit tests.** Tests must inject `FakeEmbedder`; constructing
+  `MiniLmOnnxEmbedder` in a test makes it download ~80 MB and run slowly.
 - **Wire-format drift.** A response model not derived from `ApiModel` in
   `rag_service/app/schemas.py` emits snake_case and silently breaks the
   camelCase contract the TS side reads.

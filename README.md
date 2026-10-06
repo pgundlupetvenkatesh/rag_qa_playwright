@@ -187,16 +187,21 @@ fewer cases.
 
 `rag_service/` is a lightweight RAG application written in Python with FastAPI. It
 is the system under test for the Playwright API suite. It is being built in small
-steps. So far it has only its configuration and two probes:
+steps. So far it has probes and a document corpus:
 
-| Endpoint      | Meaning                                                                                 |
-|---------------|-----------------------------------------------------------------------------------------|
-| `GET /health` | Liveness: 200 while the process is up.                                                  |
-| `GET /ready`  | Readiness: 200 or 503, depending on whether a Groq key is set, whether Groq confirms the configured model exists for that key, and whether the Chroma directory is usable. |
+| Endpoint                 | Meaning                                                                      |
+|--------------------------|------------------------------------------------------------------------------|
+| `GET /health`            | Liveness: 200 while the process is up.                                       |
+| `GET /ready`             | Readiness: 200 or 503, depending on whether a Groq key is set, whether Groq confirms the configured model exists for that key, and whether the Chroma directory is usable. |
+| `GET /corpus`            | How many documents and chunks the corpus holds.                              |
+| `POST /corpus/documents` | Add or replace documents by stable id. Each is chunked, embedded on the CPU with all-MiniLM-L6-v2, and stored in ChromaDB. Re-sending the same document is a no-op. |
+| `DELETE /corpus`         | Empty the corpus. Allowed only from the local machine unless configured otherwise. |
 
-Retrieval over a ChromaDB store and answer generation through Groq come next.
+`rag_service/scripts/ingest_squad.py` loads the 1,204 unique SQuAD 2.0 validation
+passages through that API. It reads only passage text and titles, never questions or
+answers. Retrieval and answer generation through Groq come next.
 [`rag_service/README.md`](rag_service/README.md) has the full setup, the list of
-configuration variables, and how to run it.
+configuration variables, the ingestion rules, and measured performance.
 
 Two rules keep it honest as a test target:
 
@@ -208,7 +213,7 @@ Two rules keep it honest as a test target:
   never visible to it. If the corpus contained the answers, every retrieval test
   would pass trivially.
 
-The Groq model id is configurable, and the default (`openai/gpt-oss-20b`) is not
+The Groq model id is configurable, and the default (`openai/gpt-oss-120b`) is not
 assumed to work. Which models a key can use depends on the Groq account, so
 `/ready` asks Groq and reports whether the configured model is available.
 
@@ -325,11 +330,12 @@ src/utils/datasetLoader.ts        loads + validates the golden dataset
 tests/dataset/ragDataset.spec.ts  dataset validation test
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
-rag_service/app/                  reference RAG service: FastAPI app, settings, readiness checks
+rag_service/app/                  reference RAG service: FastAPI app, settings, readiness, chunking, corpus
+rag_service/scripts/ingest_squad.py  loads SQuAD validation passages into the service
 rag_service/tests/                service unit tests (pytest)
 rag_service/requirements.txt      service Python dependencies
 rag_service/.env.example          placeholder-only template for the gitignored rag_service/.env
-rag_service/README.md             service setup, configuration, run
+rag_service/README.md             service setup, configuration, ingestion, performance
 ```
 
 ## Planned

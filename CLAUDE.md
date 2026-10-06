@@ -15,12 +15,14 @@ Langfuse (observability).
 
 ## Current state — Milestone 2 in progress
 
-Delivered: Milestone 1 (golden evaluation dataset and its validation). Milestone 2 so far: the
-`rag_service/` skeleton — typed settings, `GET /health` (liveness) and `GET /ready` (readiness).
+Delivered: Milestone 1 (golden evaluation dataset and its validation). Milestone 2 so far in
+`rag_service/`: typed settings, `GET /health`, `GET /ready`, and a persistent ChromaDB corpus with
+chunked ingestion (`POST /corpus/documents`), stats (`GET /corpus`), guarded reset
+(`DELETE /corpus`), plus `scripts/ingest_squad.py` to load the SQuAD validation passages.
 
-**Not built yet — do not assume these exist:** corpus ingest, ChromaDB, retrieval, `/retrieve`,
-`/query`, Groq generation, any TS RAG client/adapter, API tests, Playwright projects/fixtures,
-browser projects, Ragas, Promptfoo, Allure, Langfuse, UI tests.
+**Not built yet — do not assume these exist:** retrieval/search (`/retrieve`), `/query`, Groq
+generation, any TS RAG client/adapter, API tests, Playwright projects/fixtures, browser projects,
+Ragas, Promptfoo, Allure, Langfuse, UI tests.
 
 When asked to add functionality, build it rather than assuming helpers are available.
 
@@ -45,6 +47,7 @@ uv pip install -r requirements.txt
 cp .env.example .env         # gitignored; set GROQ_API_KEY
 pytest                       # service unit tests, offline
 python -m app                # serves on API_HOST:API_PORT (default 127.0.0.1:8000)
+python scripts/ingest_squad.py [--reset]   # load 1,204 SQuAD passages via the API (~2 min first time)
 ```
 
 Playwright browsers are already installed locally. No browser project is declared in
@@ -90,7 +93,21 @@ default id is never assumed to work.
 
 **Evaluation labels never reach the RAG corpus.** Questions, `groundTruth` and `answerable` stay on
 the test side; the service must not read `data/golden/`. A corpus that contains the answers turns
-every retrieval and grounding test into a lookup.
+every retrieval and grounding test into a lookup. Enforced twice: `DocumentMetadata` in
+`schemas.py` is a closed allowlist (`title`, `source`; unknown keys → 422), and
+`scripts/ingest_squad.py` selects only SQuAD's `title` and `context` columns.
+
+**Corpus ingestion is idempotent by document id** (`rag_service/app/corpus.py`). Chunk ids are
+`<documentId>#<chunkIndex>`; each chunk stores a `fingerprint` of text + metadata + chunk params +
+embedding model. Identical re-ingest → `unchanged`, nothing re-embedded; changed → upsert new chunks
+first, then delete leftover ids, so no stale chunk survives and a document is never missing
+mid-replace. Writes run under one process-wide lock — run a single uvicorn worker. The collection
+records its embedding model and refuses to open under a different one. SQuAD document ids are
+`squad-` + first 16 hex of SHA-1(passage), so the TS side can derive a golden case's expected
+document id from `context[0]` without the service reading golden data.
+
+**Destructive endpoints are guarded.** `DELETE /corpus` obeys `ALLOW_RESET`: unset → loopback
+callers only (checked on the TCP peer address, not `API_HOST`); `true` → anyone; `false` → 403.
 
 ## Conventions
 
@@ -122,12 +139,19 @@ every retrieval and grounding test into a lookup.
   (e.g. API Extractor) needs its own build config — it cannot reuse this one as-is.
 - `CHUNK_SIZE` defaults to 1000 characters because all-MiniLM-L6-v2 embeds at most **256 tokens** and
   silently truncates the rest (Chroma's ONNX tokenizer, `max_length=256`). Measured on the SQuAD
-  validation passages with 1000/200 overlap: 1,473 chunks, 235 of 1,204 passages split, 8 chunks
-  (0.5%) over 256 tokens. Raising it well past ~1100 means long passages are only partly searchable.
+  validation passages with 1000/200 word-aligned chunking (`app/chunking.py`): 1,473 chunks, 235 of
+  1,204 passages split, 7 chunks (0.5%) over 256 tokens. Raising it well past ~1100 means long passages are only partly searchable.
   Because passages get split, a retrieved chunk is not a whole golden `context` — retrieval
   checks must match on the chunk's parent-passage id, not on text equality.
-- `EMBEDDING_MODEL` only accepts `all-MiniLM-L6-v2`: Chroma's built-in ONNX model, chosen because this
-  dev machine is an Intel Mac and torch ships no current x86_64 macOS wheels (last is 2.2.2).
+- `EMBEDDING_MODEL` only accepts `all-MiniLM-L6-v2`: the Sentence Transformers model, but executed by
+  Chroma's bundled ONNX build (`MiniLmOnnxEmbedder` in `app/embeddings.py`), not the
+  `sentence-transformers` package — this dev machine is an Intel Mac and torch ships no current
+  x86_64 macOS wheels (last is 2.2.2). `requirements.txt` pins `onnxruntime<1.24` **only** on Intel
+  macOS (newer versions have no wheels there); Linux/Docker get current releases. Don't drop the
+  marker or widen the pin.
+- Unit tests never load the real embedding model: they inject `FakeEmbedder` (`tests/conftest.py`)
+  through the `Embedder` protocol. Only `scripts/ingest_squad.py` against a running service
+  exercises the ONNX model (first full ingest ≈ 113 s on this machine, ~660 MB RSS).
 - `rag_service/` tests depend on **`httpx2`, not `httpx`**. Current Starlette deprecates plain `httpx`
   behind FastAPI's `TestClient` and warns on every run; don't "fix" the name back.
 - This repo does **not** auto-delete branches on PR merge (`delete_branch_on_merge` is off). Delete
