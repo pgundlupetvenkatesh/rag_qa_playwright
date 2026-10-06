@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     groq_api_key: SecretStr | None = None
     """Groq API key. Optional at startup; ``/ready`` reports it missing."""
 
-    groq_model: str = Field(default="openai/gpt-oss-20b", min_length=1)
+    groq_model: str = Field(default="openai/gpt-oss-120b", min_length=1)
     """Groq model id. Not assumed to exist: ``/ready`` verifies it with Groq."""
 
     embedding_model: str = "all-MiniLM-L6-v2"
@@ -63,10 +63,15 @@ class Settings(BaseSettings):
     request_timeout_seconds: float = Field(default=30.0, gt=0)
     """Timeout for outbound calls to Groq."""
 
-    @field_validator("groq_api_key", mode="before")
+    allow_reset: bool | None = None
+    """Whether ``DELETE /corpus`` may wipe the corpus. Unset (the default)
+    allows it only for requests from a loopback address; ``true`` allows it
+    from anywhere (e.g. a CI container); ``false`` disables it entirely."""
+
+    @field_validator("groq_api_key", "allow_reset", mode="before")
     @classmethod
-    def _blank_key_is_unset(cls, value: object) -> object:
-        """Treat an empty ``GROQ_API_KEY=`` line as no key at all.
+    def _blank_is_unset(cls, value: object) -> object:
+        """Treat an empty line such as ``GROQ_API_KEY=`` as not set at all.
 
         :param value: Raw value from the environment.
         :type value: object

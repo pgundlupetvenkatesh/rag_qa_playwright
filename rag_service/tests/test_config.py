@@ -11,7 +11,7 @@ def test_defaults_apply_when_unset(make_settings: Callable[..., Settings]) -> No
     settings = make_settings()
 
     assert settings.groq_api_key is None
-    assert settings.groq_model == "openai/gpt-oss-20b"
+    assert settings.groq_model == "openai/gpt-oss-120b"
     assert settings.embedding_model == "all-MiniLM-L6-v2"
     assert settings.chroma_path == SERVICE_ROOT / ".chroma"
     assert (settings.chunk_size, settings.chunk_overlap) == (1000, 200)
@@ -21,13 +21,13 @@ def test_defaults_apply_when_unset(make_settings: Callable[..., Settings]) -> No
 
 
 def test_environment_variables_are_read(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("GROQ_MODEL", "qwen/qwen3-32b")
+    monkeypatch.setenv("GROQ_MODEL", "qwen/qwen3.8-27b")
     monkeypatch.setenv("TOP_K", "7")
     monkeypatch.setenv("API_PORT", "9001")
 
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
 
-    assert settings.groq_model == "qwen/qwen3-32b"
+    assert settings.groq_model == "qwen/qwen3.8-27b"
     assert settings.top_k == 7
     assert settings.api_port == 9001
 
