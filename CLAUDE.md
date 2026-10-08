@@ -18,10 +18,10 @@ Langfuse (observability).
 Delivered: Milestone 1 (golden evaluation dataset and its validation). Milestone 2 so far in
 `rag_service/`: typed settings, `GET /health`, `GET /ready`, and a persistent ChromaDB corpus with
 chunked ingestion (`POST /corpus/documents`), stats (`GET /corpus`), guarded reset
-(`DELETE /corpus`), plus `scripts/ingest_squad.py` to load the SQuAD validation passages.
+(`DELETE /corpus`), plus `scripts/ingest_squad.py` to load the SQuAD validation passages;
+retrieval (`POST /retrieve`, no LLM) and grounded Groq answers (`POST /query`).
 
-**Not built yet — do not assume these exist:** retrieval/search (`/retrieve`), `/query`, Groq
-generation, any TS RAG client/adapter, API tests, Playwright projects/fixtures, browser projects,
+**Not built yet — do not assume these exist:** any TS RAG client/adapter, API tests, Playwright projects/fixtures, browser projects,
 Ragas, Promptfoo, Allure, Langfuse, UI tests.
 
 When asked to add functionality, build it rather than assuming helpers are available.
@@ -106,6 +106,17 @@ records its embedding model and refuses to open under a different one. SQuAD doc
 `squad-` + first 16 hex of SHA-1(passage), so the TS side can derive a golden case's expected
 document id from `context[0]` without the service reading golden data.
 
+**Retrieval and generation are separate stages.** `Corpus.search` (`corpus.py`) embeds the
+question and returns the nearest chunks; `/retrieve` exposes it without touching the LLM. All Groq
+answer code is in `app/generation.py` behind the `Generator` protocol (`get_generator` dependency in
+`main.py`; tests override it). Errors are `{"detail": {stage, code, message}}` with `stage`
+`retrieval` or `generation`, so a test can tell which half failed. An empty corpus is a 409
+`corpus_empty`, never an empty result or an abstention — otherwise an unanswerable golden case would
+"pass" against an empty store. A missing key fails as `missing_credentials` before retrieval runs.
+Abstention is the model replying the exact `ABSTAIN_SENTINEL`; `evidence` in the response is what
+retrieval returned, never model-claimed citations. Groq calls are one attempt (`max_retries=0`),
+bounded by `REQUEST_TIMEOUT_SECONDS`, and error messages never echo provider text.
+
 **Destructive endpoints are guarded.** `DELETE /corpus` obeys `ALLOW_RESET`: unset → loopback
 callers only (checked on the TCP peer address, not `API_HOST`); `true` → anyone; `false` → 403.
 
@@ -149,6 +160,10 @@ callers only (checked on the TCP peer address, not `API_HOST`); `true` → anyon
   x86_64 macOS wheels (last is 2.2.2). `requirements.txt` pins `onnxruntime<1.24` **only** on Intel
   macOS (newer versions have no wheels there); Linux/Docker get current releases. Don't drop the
   marker or widen the pin.
+- gpt-oss and qwen3 take different reasoning parameters on Groq: gpt-oss rejects `reasoning_format`
+  and needs `include_reasoning: false`; `qwen/qwen3.8-27b` doesn't reason by default and gets
+  none (`_reasoning_params` in `app/generation.py`). Adding another model family may need a branch
+  there — a wrong parameter is a Groq 400 → `provider_error`.
 - Unit tests never load the real embedding model: they inject `FakeEmbedder` (`tests/conftest.py`)
   through the `Embedder` protocol. Only `scripts/ingest_squad.py` against a running service
   exercises the ONNX model (first full ingest ≈ 113 s on this machine, ~660 MB RSS).

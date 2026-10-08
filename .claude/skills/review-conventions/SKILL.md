@@ -167,6 +167,12 @@ Flag any of these:
   purpose — don't accept a change back to `httpx`.
 - **Unverified model ids.** Code or docs that treat `GROQ_MODEL`'s default as
   known-good. Availability is per Groq account; `/ready` is what verifies it.
+- **Retrieval/generation separation.** `/retrieve` must not depend on the
+  generator; Groq code stays in `app/generation.py` behind `Generator`. Errors
+  keep `detail.stage`. An empty corpus must stay a 409 `corpus_empty`, not an
+  empty list or an abstention. Groq calls keep `max_retries=0`; error messages
+  never include provider text or the key. Unit tests mock the Groq client
+  (or override `get_generator`) — a test that needs a real key is a bug.
 - **Chunking vs. the embedding window.** all-MiniLM-L6-v2 embeds at most 256
   tokens and truncates silently. Raising the `CHUNK_SIZE` default well past
   1000 characters makes long passages only partly searchable — flag it unless

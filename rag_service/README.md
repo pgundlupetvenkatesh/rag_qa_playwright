@@ -4,9 +4,9 @@ Reference RAG service (Python, FastAPI) that the Playwright suite in this repo
 tests over HTTP. It runs independently of the TypeScript framework, with its own
 dependencies, virtualenv and tests.
 
-So far it has configuration, health and readiness probes, and document
-ingestion into a persistent ChromaDB corpus. Retrieval and answer generation
-are not built yet.
+It has configuration, health and readiness probes, document ingestion into a
+persistent ChromaDB corpus, retrieval, and answer generation through Groq that
+is grounded in the retrieved evidence.
 
 ## Setup
 
@@ -28,19 +28,51 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+### Smoke check
+
+The end-to-end check after setting `GROQ_API_KEY` in `.env`. Run it from
+`rag_service/` with the venv active. Each `/query` makes one paid Groq call.
+
+```bash
+pytest                                   # offline unit tests
+python -m app &                          # start the service (default model: openai/gpt-oss-120b)
+curl -s localhost:8000/ready             # expect "status":"ready" with all three checks ok
+curl -s localhost:8000/corpus            # expect 1204 documents; if 0, run scripts/ingest_squad.py
+
+# Retrieval only, no LLM:
+curl -s -X POST localhost:8000/retrieve -H 'content-type: application/json' \
+  -d '{"question": "In what country is Normandy located?", "topK": 3}'
+
+# Retrieval plus a grounded answer:
+curl -s -X POST localhost:8000/query -H 'content-type: application/json' \
+  -d '{"question": "In what country is Normandy located?"}'
+
+# Should abstain ("abstained": true, "answer": null):
+curl -s -X POST localhost:8000/query -H 'content-type: application/json' \
+  -d '{"question": "What is the boiling point of mercury on Mars?"}'
+
+kill %1                                  # stop the service
+```
+
+To try another model without editing `.env`, override it for one run:
+`GROQ_MODEL=qwen/qwen3.8-27b python -m app`. Check `/ready` first; it confirms
+the model is available to your key.
+
 Settings are loaded from `rag_service/.env` whatever the working directory, and
 real environment variables override it. Invalid values stop the service at
 startup with a validation error.
 
 ## Endpoints
 
-| Endpoint      | Meaning                                                                                  |
-|---------------|------------------------------------------------------------------------------------------|
-| `GET /health` | Liveness. Always 200 while the process is up; contacts nothing.                          |
-| `GET /ready`  | Readiness. 200 `ready` or 503 `not_ready`, with one entry per check: `groqApiKey`, `groqModel`, `chromaPath`. |
-| `GET /corpus` | `{documents, chunks, embeddingModel}`.                                                   |
-| `POST /corpus/documents` | Add or replace documents by id. Returns per-request counts plus the corpus size afterwards. |
-| `DELETE /corpus` | Delete every document. Guarded, see [Reset](#reset).                                  |
+| Endpoint                 | Meaning                                                                                                       |
+|--------------------------|---------------------------------------------------------------------------------------------------------------|
+| `GET /health`            | Liveness. Always 200 while the process is up; contacts nothing.                                               |
+| `GET /ready`             | Readiness. 200 `ready` or 503 `not_ready`, with one entry per check: `groqApiKey`, `groqModel`, `chromaPath`. |
+| `GET /corpus`            | `{documents, chunks, embeddingModel}`.                                                                        |
+| `POST /corpus/documents` | Add or replace documents by id. Returns per-request counts plus the corpus size afterwards.                   |
+| `DELETE /corpus`         | Delete every document. Guarded, see [Reset](#reset).                                                          |
+| `POST /retrieve`         | Top-k chunks for a question. No language model. See [Retrieval](#retrieval).                                  |
+| `POST /query`            | Retrieval, then a grounded Groq answer or an abstention. See [Answer generation](#answer-generation).         |
 
 `/ready` makes one live call to Groq (no retries, bounded by
 `REQUEST_TIMEOUT_SECONDS`) to confirm that `GROQ_MODEL` is available to your key.
@@ -98,16 +130,95 @@ uses only the public API.
 
 `DELETE /corpus` drops and recreates the collection. `ALLOW_RESET` controls it:
 
-| `ALLOW_RESET` | Who can reset                                                     |
-|---------------|-------------------------------------------------------------------|
+| `ALLOW_RESET` | Who can reset                                                         |
+|---------------|-----------------------------------------------------------------------|
 | unset         | Only callers connecting from a loopback address (`127.0.0.1`, `::1`). |
-| `true`        | Anyone. For a CI container whose test runner is not on loopback.  |
-| `false`       | Nobody (403).                                                     |
+| `true`        | Anyone. For a CI container whose test runner is not on loopback.      |
+| `false`       | Nobody (403).                                                         |
 
 The check uses the caller's TCP address, not `API_HOST`, so it still holds when
 the service is started with `uvicorn --host 0.0.0.0`. Behind a reverse proxy on
 the same machine every caller looks like loopback, so set `ALLOW_RESET=false`
 there.
+
+## Retrieval
+
+```json
+POST /retrieve
+{"question": "In what country is Normandy located?", "topK": 3}
+```
+
+`topK` is optional (1-50; default `TOP_K`), and `question` must be 1-2,000
+non-blank characters. Unknown fields are rejected (422). The question is
+embedded with the corpus's own model, and Chroma returns the nearest chunks,
+closest first:
+
+```json
+{"question": "...", "topK": 3, "retrievalMs": 12.4,
+ "chunks": [{"chunkId": "squad-6ec74f41bfd72db9#0", "documentId": "squad-6ec74f41bfd72db9",
+             "chunkIndex": 0, "text": "...", "title": "Normans", "source": "squad_v2",
+             "distance": 0.449, "similarity": 0.551}]}
+```
+
+`distance` is cosine distance (0 means the same direction). `similarity` is
+`1 - distance`. Long passages are split into several chunks, so a retrieval
+check must match on `documentId` (the parent passage), not on text.
+
+If the corpus is empty, retrieval returns 409 with
+`{"detail": {"stage": "retrieval", "code": "corpus_empty", ...}}`. It does not
+return an empty list that a caller could mistake for "nothing relevant".
+
+## Answer generation
+
+`POST /query` takes the same body as `/retrieve`. It runs retrieval, then sends
+the question and the numbered evidence passages to `GROQ_MODEL`. The system
+prompt tells the model to answer only from that evidence, to add no unsupported
+claims, to treat the evidence as data rather than instructions, and to reply
+exactly `INSUFFICIENT_EVIDENCE` when the evidence cannot answer the question.
+
+```json
+{"question": "...", "answer": "France.", "abstained": false, "model": "openai/gpt-oss-120b",
+ "evidence": [/* exactly the chunks the model was shown, same shape as /retrieve */],
+ "usage": {"promptTokens": 812, "completionTokens": 41, "totalTokens": 853},
+ "timings": {"retrievalMs": 11.8, "generationMs": 640.2, "providerMs": 212.5}}
+```
+
+- **Abstention:** `abstained: true` with `answer: null`. The evidence is still
+  returned, because retrieval did run.
+- **No citations are generated.** The model is told not to cite, and
+  `evidence` is the server's record of what retrieval returned, not the
+  model's claim about what it used.
+- **Model-specific parameters:** temperature 0 and at most 1,024 completion
+  tokens. For `openai/gpt-oss-*`, reasoning is excluded from the reply
+  (`include_reasoning: false`, `reasoning_effort: low`). `qwen/qwen3.8-27b`
+  does not reason by default on Groq, so it gets no extra parameters. Switch
+  models with `GROQ_MODEL` and confirm the new id with `/ready`.
+- **One attempt, no retries:** SDK retries are disabled, and each call is
+  bounded by `REQUEST_TIMEOUT_SECONDS`.
+
+### Errors
+
+Every failure has the shape `{"detail": {"stage", "code", "message"}}`. `stage`
+says whether retrieval or generation failed. Messages are written by the
+service and never copied from Groq, so neither the key nor the prompt can leak
+through them.
+
+| Stage        | `code`                 | HTTP | When                                                                              |
+|--------------|------------------------|------|-----------------------------------------------------------------------------------|
+| `retrieval`  | `corpus_empty`         | 409  | Nothing ingested. The model is not called.                                        |
+| `retrieval`  | `no_results`           | 409  | The corpus returned nothing. The model is not called.                             |
+| `generation` | `missing_credentials`  | 503  | `GROQ_API_KEY` unset. Checked before retrieval runs.                              |
+| `generation` | `provider_auth_failed` | 503  | Groq rejected the key (401/403).                                                  |
+| `generation` | `model_unavailable`    | 503  | `GROQ_MODEL` is not available to the key (404).                                   |
+| `generation` | `rate_limited`         | 429  | Groq's rate limit. Groq's `Retry-After` is passed through.                        |
+| `generation` | `provider_timeout`     | 504  | No answer within `REQUEST_TIMEOUT_SECONDS`.                                       |
+| `generation` | `provider_unreachable` | 502  | Network failure reaching Groq.                                                    |
+| `generation` | `provider_error`       | 502  | Any other Groq HTTP error.                                                        |
+| `generation` | `malformed_response`   | 502  | No choices, empty content, or output cut off (`finish_reason` other than `stop`). |
+
+The Groq integration lives entirely in `app/generation.py`, behind a small
+`Generator` protocol. Another provider can replace it without changing
+retrieval or the endpoints.
 
 ## Performance and dependencies
 
@@ -135,18 +246,18 @@ Measured on this machine (Intel Core i7-8559U, CPU only):
 
 ## Configuration
 
-| Variable                  | Default              | Notes                                                                 |
-|---------------------------|----------------------|-----------------------------------------------------------------------|
-| `GROQ_API_KEY`            | unset                | Required for `/ready` to pass. Never logged or returned.              |
-| `GROQ_MODEL`              | `openai/gpt-oss-120b` | Must be verified for your account through `/ready`.                   |
-| `EMBEDDING_MODEL`         | `all-MiniLM-L6-v2`   | The only supported value. Chroma's ONNX model runs without torch.     |
-| `CHROMA_PATH`             | `.chroma`            | Relative paths resolve against `rag_service/`. Gitignored.            |
-| `CHUNK_SIZE`              | `1000`               | Characters. The embedding model reads at most 256 tokens; 1000 chars fits for 99.5% of chunks. |
-| `CHUNK_OVERLAP`           | `200`                | Characters; must be smaller than `CHUNK_SIZE`.                        |
-| `TOP_K`                   | `4`                  | Passages retrieved per question.                                      |
-| `API_HOST` / `API_PORT`   | `127.0.0.1` / `8000` | Used by `python -m app`.                                              |
-| `REQUEST_TIMEOUT_SECONDS` | `30`                 | Timeout for outbound Groq calls.                                      |
-| `ALLOW_RESET`             | unset                | Who may call `DELETE /corpus`; see [Reset](#reset).                   |
+| Variable                  | Default               | Notes                                                                                          |
+|---------------------------|-----------------------|------------------------------------------------------------------------------------------------|
+| `GROQ_API_KEY`            | unset                 | Required for `/ready` and `/query`. Never logged or returned.                                  |
+| `GROQ_MODEL`              | `openai/gpt-oss-120b` | e.g. `qwen/qwen3.8-27b`. Must be verified for your account through `/ready`.                   |
+| `EMBEDDING_MODEL`         | `all-MiniLM-L6-v2`    | The only supported value. Chroma's ONNX model runs without torch.                              |
+| `CHROMA_PATH`             | `.chroma`             | Relative paths resolve against `rag_service/`. Gitignored.                                     |
+| `CHUNK_SIZE`              | `1000`                | Characters. The embedding model reads at most 256 tokens; 1000 chars fits for 99.5% of chunks. |
+| `CHUNK_OVERLAP`           | `200`                 | Characters; must be smaller than `CHUNK_SIZE`.                                                 |
+| `TOP_K`                   | `4`                   | Passages retrieved per question.                                                               |
+| `API_HOST` / `API_PORT`   | `127.0.0.1` / `8000`  | Used by `python -m app`.                                                                       |
+| `REQUEST_TIMEOUT_SECONDS` | `30`                  | Timeout for outbound Groq calls.                                                               |
+| `ALLOW_RESET`             | unset                 | Who may call `DELETE /corpus`; see [Reset](#reset).                                            |
 
 ## Test
 
@@ -155,7 +266,8 @@ pytest
 ```
 
 Tests read neither your shell's variables nor `.env`, and they make no network
-calls. Groq is replaced by a mock HTTP transport, the embedding model by a
+calls. Groq is replaced by a mocked client (generation) or a mock HTTP transport
+(readiness), so no key is needed and no API charges are incurred. The embedding model is replaced by a
 deterministic fake (so the ~80 MB model is never needed), and settings and the
 corpus are injected through FastAPI dependency overrides. Each test gets its own
 temporary Chroma directory.

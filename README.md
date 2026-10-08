@@ -187,7 +187,7 @@ fewer cases.
 
 `rag_service/` is a lightweight RAG application written in Python with FastAPI. It
 is the system under test for the Playwright API suite. It is being built in small
-steps. So far it has probes and a document corpus:
+steps. So far it has probes, a document corpus, retrieval and grounded answer generation:
 
 | Endpoint                 | Meaning                                                                      |
 |--------------------------|------------------------------------------------------------------------------|
@@ -196,10 +196,12 @@ steps. So far it has probes and a document corpus:
 | `GET /corpus`            | How many documents and chunks the corpus holds.                              |
 | `POST /corpus/documents` | Add or replace documents by stable id. Each is chunked, embedded on the CPU with all-MiniLM-L6-v2, and stored in ChromaDB. Re-sending the same document is a no-op. |
 | `DELETE /corpus`         | Empty the corpus. Allowed only from the local machine unless configured otherwise. |
+| `POST /retrieve`         | The top-k chunks nearest to a question, with their parent document ids and distances. Never calls the language model. |
+| `POST /query`            | Retrieves evidence, then asks a Groq model to answer from that evidence alone or abstain. Returns the answer, the evidence, the model id, token counts and timings. |
 
 `rag_service/scripts/ingest_squad.py` loads the 1,204 unique SQuAD 2.0 validation
 passages through that API. It reads only passage text and titles, never questions or
-answers. Retrieval and answer generation through Groq come next.
+answers.
 [`rag_service/README.md`](rag_service/README.md) has the full setup, the list of
 configuration variables, the ingestion rules, and measured performance.
 
@@ -297,7 +299,7 @@ curl http://127.0.0.1:8000/ready
 ```
 
 The unit tests ignore `.env` and the shell environment, inject settings through FastAPI's
-dependency overrides, and replace Groq with a mock HTTP transport. They need neither a
+dependency overrides, and replace Groq with a mocked client or HTTP transport. They need neither a
 key nor a network connection.
 
 ### Generate the API documentation
@@ -330,7 +332,7 @@ src/utils/datasetLoader.ts        loads + validates the golden dataset
 tests/dataset/ragDataset.spec.ts  dataset validation test
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
-rag_service/app/                  reference RAG service: FastAPI app, settings, readiness, chunking, corpus
+rag_service/app/                  reference RAG service: FastAPI app, settings, readiness, chunking, corpus and retrieval, Groq generation
 rag_service/scripts/ingest_squad.py  loads SQuAD validation passages into the service
 rag_service/tests/                service unit tests (pytest)
 rag_service/requirements.txt      service Python dependencies
@@ -340,7 +342,6 @@ rag_service/README.md             service setup, configuration, ingestion, perfo
 
 ## Planned
 
-Not yet implemented: retrieval and answer generation in the reference RAG service,
-the Playwright API adapter and API tests that drive it, Ragas (RAG evaluation),
+Not yet implemented: the Playwright API adapter and API tests that drive it, Ragas (RAG evaluation),
 Promptfoo (LLM/adversarial testing), Allure (reporting), Langfuse (observability),
 and UI tests.
