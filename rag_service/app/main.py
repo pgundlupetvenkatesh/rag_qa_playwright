@@ -7,24 +7,34 @@ or ``uvicorn app.main:app``.
 from __future__ import annotations
 
 import ipaddress
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 
 from app.config import Settings, get_settings
-from app.corpus import Corpus, EmbeddingModelMismatchError, SourceDocument
+from app.corpus import Corpus, EmbeddingModelMismatchError, RetrievedChunk, SourceDocument
 from app.embeddings import MiniLmOnnxEmbedder
+from app.generation import Generator, GenerationError, build_generator
 from app.readiness import ModelVerifier, get_model_verifier, run_readiness_checks
 from app.schemas import (
     CorpusStats,
+    ErrorResponse,
     HealthResponse,
     IngestRequest,
     IngestResponse,
+    QueryResponse,
+    QueryTimings,
+    QuestionRequest,
     ReadinessResponse,
     ResetResponse,
+    RetrievedChunkOut,
+    RetrieveResponse,
+    TokenUsage,
 )
 
 
@@ -83,6 +93,90 @@ def get_corpus(settings: SettingsDep) -> Corpus:
 
 
 CorpusDep = Annotated[Corpus, Depends(get_corpus)]
+
+
+def get_generator(settings: SettingsDep) -> Generator:
+    """FastAPI dependency returning the answer generator; tests override it.
+
+    :param settings: Injected service settings.
+    :type settings: Settings
+    :returns: The Groq-backed generator.
+    :rtype: Generator
+    :raises GenerationError: ``missing_credentials`` when ``GROQ_API_KEY`` is
+        unset, before any retrieval work is done.
+    """
+    return build_generator(settings)
+
+
+GeneratorDep = Annotated[Generator, Depends(get_generator)]
+
+
+@app.exception_handler(GenerationError)
+def generation_error(request: Request, error: GenerationError) -> JSONResponse:
+    """Render a :class:`GenerationError` as ``{"detail": {stage, code, message}}``.
+
+    :param request: The failed request.
+    :type request: Request
+    :param error: The generation failure.
+    :type error: GenerationError
+    :returns: The error response, with ``Retry-After`` when Groq sent one.
+    :rtype: JSONResponse
+    """
+    headers = {"Retry-After": error.retry_after} if error.retry_after else None
+    body = {"detail": {"stage": "generation", "code": error.code, "message": error.message}}
+    return JSONResponse(body, status_code=error.status_code, headers=headers)
+
+
+def _retrieve(corpus: Corpus, question: str, top_k: int) -> tuple[list[RetrievedChunk], float]:
+    """Run retrieval, failing explicitly when there is nothing to retrieve.
+
+    :param corpus: The corpus.
+    :type corpus: Corpus
+    :param question: The question.
+    :type question: str
+    :param top_k: Maximum chunks to return.
+    :type top_k: int
+    :returns: The chunks, closest first, and the elapsed milliseconds.
+    :rtype: tuple[list[RetrievedChunk], float]
+    :raises HTTPException: 409 ``corpus_empty`` when nothing is ingested, or
+        ``no_results`` when the corpus returned nothing.
+    """
+    started = time.perf_counter()
+    chunks = corpus.search(question, top_k)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    if not chunks:
+        empty = corpus.size().chunks == 0
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            {
+                "stage": "retrieval",
+                "code": "corpus_empty" if empty else "no_results",
+                "message": "the corpus is empty; ingest documents first"
+                if empty
+                else "retrieval returned no chunks",
+            },
+        )
+    return chunks, elapsed_ms
+
+
+def _chunk_out(chunk: RetrievedChunk) -> RetrievedChunkOut:
+    """Convert a retrieved chunk to its wire model.
+
+    :param chunk: The chunk.
+    :type chunk: RetrievedChunk
+    :returns: The wire model, with similarity derived from distance.
+    :rtype: RetrievedChunkOut
+    """
+    return RetrievedChunkOut(
+        chunk_id=chunk.chunk_id,
+        document_id=chunk.document_id,
+        chunk_index=chunk.chunk_index,
+        text=chunk.text,
+        title=chunk.title,
+        source=chunk.source,
+        distance=chunk.distance,
+        similarity=1 - chunk.distance,
+    )
 
 
 def _corpus_stats(corpus: Corpus) -> CorpusStats:
@@ -239,4 +333,83 @@ def reset_corpus(request: Request, settings: SettingsDep, corpus: CorpusDep) -> 
         documents_deleted=deleted.documents,
         chunks_deleted=deleted.chunks,
         corpus=_corpus_stats(corpus),
+    )
+
+_STAGE_ERRORS = {status.HTTP_409_CONFLICT: {"model": ErrorResponse, "description": "Retrieval found nothing."}}
+
+
+@app.post("/retrieve", response_model=RetrieveResponse, responses=_STAGE_ERRORS)
+def retrieve(body: QuestionRequest, settings: SettingsDep, corpus: CorpusDep) -> RetrieveResponse:
+    """Return the chunks nearest to the question. Never calls the language model.
+
+    :param body: The question and optional ``topK``.
+    :type body: QuestionRequest
+    :param settings: Injected service settings (default ``TOP_K``).
+    :type settings: Settings
+    :param corpus: Injected corpus.
+    :type corpus: Corpus
+    :returns: Retrieved chunks, closest first.
+    :rtype: RetrieveResponse
+    :raises HTTPException: 409 when there is nothing to retrieve.
+    """
+    top_k = body.top_k or settings.top_k
+    chunks, retrieval_ms = _retrieve(corpus, body.question, top_k)
+    return RetrieveResponse(
+        question=body.question,
+        top_k=top_k,
+        chunks=[_chunk_out(chunk) for chunk in chunks],
+        retrieval_ms=retrieval_ms,
+    )
+
+
+@app.post(
+    "/query",
+    response_model=QueryResponse,
+    responses={
+        **_STAGE_ERRORS,
+        **{
+            code: {"model": ErrorResponse, "description": "Answer generation failed."}
+            for code in (429, 502, 503, 504)
+        },
+    },
+)
+def query(body: QuestionRequest, settings: SettingsDep, corpus: CorpusDep, generator: GeneratorDep) -> QueryResponse:
+    """Retrieve evidence, then answer from it alone, or abstain.
+
+    Errors carry ``detail.stage`` (``retrieval`` or ``generation``) so a caller
+    can tell which half failed.
+
+    :param body: The question and optional ``topK``.
+    :type body: QuestionRequest
+    :param settings: Injected service settings (default ``TOP_K``).
+    :type settings: Settings
+    :param corpus: Injected corpus.
+    :type corpus: Corpus
+    :param generator: Injected answer generator.
+    :type generator: Generator
+    :returns: The answer or abstention, the evidence shown to the model, and metadata.
+    :rtype: QueryResponse
+    :raises HTTPException: 409 when retrieval found nothing; the model is not called.
+    :raises GenerationError: When the provider fails; rendered by :func:`generation_error`.
+    """
+    chunks, retrieval_ms = _retrieve(corpus, body.question, body.top_k or settings.top_k)
+    started = time.perf_counter()
+    generation = generator.generate(body.question, chunks)
+    generation_ms = (time.perf_counter() - started) * 1000
+    return QueryResponse(
+        question=body.question,
+        answer=generation.answer,
+        abstained=generation.abstained,
+        model=generation.model,
+        evidence=[_chunk_out(chunk) for chunk in chunks],
+        usage=TokenUsage(
+            prompt_tokens=generation.prompt_tokens,
+            completion_tokens=generation.completion_tokens,
+            total_tokens=generation.total_tokens,
+        ),
+        timings=QueryTimings(
+            retrieval_ms=retrieval_ms,
+            generation_ms=generation_ms,
+            provider_ms=generation.provider_ms,
+        ),
     )

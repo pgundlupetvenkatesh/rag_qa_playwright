@@ -14,6 +14,8 @@ from pydantic.alias_generators import to_camel
 
 MAX_DOCUMENTS_PER_REQUEST = 1000
 MAX_DOCUMENT_CHARS = 100_000
+MAX_QUESTION_CHARS = 2000
+MAX_TOP_K = 50
 
 DOCUMENT_ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
 """Stable document ids: 1-128 chars, no ``#`` (reserved for chunk ids) or spaces."""
@@ -83,6 +85,85 @@ class IngestRequest(RequestModel):
         if repeated:
             raise ValueError(f"duplicate document ids in request: {', '.join(repeated)}")
         return self
+
+
+class QuestionRequest(RequestModel):
+    """Body of ``POST /retrieve`` and ``POST /query``."""
+
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_QUESTION_CHARS)]
+    top_k: Annotated[int, Field(ge=1, le=MAX_TOP_K)] | None = None
+    """Chunks to retrieve; defaults to the ``TOP_K`` setting."""
+
+
+class RetrievedChunkOut(ApiModel):
+    """One retrieved chunk. ``documentId`` is the parent passage: match on it, not on text."""
+
+    chunk_id: str
+    document_id: str
+    chunk_index: int
+    text: str
+    title: str | None
+    source: str | None
+    distance: float
+    """Cosine distance to the question: 0 is identical direction, 2 is opposite."""
+    similarity: float
+    """``1 - distance`` (cosine similarity)."""
+
+
+class RetrieveResponse(ApiModel):
+    """Body of ``POST /retrieve``. No language model is involved."""
+
+    question: str
+    top_k: int
+    chunks: list[RetrievedChunkOut]
+    retrieval_ms: float
+
+
+class TokenUsage(ApiModel):
+    """Token counts as reported by the provider; ``null`` when not reported."""
+
+    prompt_tokens: int | None
+    completion_tokens: int | None
+    total_tokens: int | None
+
+
+class QueryTimings(ApiModel):
+    """Wall-clock time per stage, plus the provider's own processing time if reported."""
+
+    retrieval_ms: float
+    generation_ms: float
+    provider_ms: float | None
+
+
+class QueryResponse(ApiModel):
+    """Body of ``POST /query``.
+
+    ``evidence`` is exactly what retrieval returned and what the model was
+    shown; the model's answer cites nothing else. ``answer`` is ``null`` when
+    ``abstained`` is true.
+    """
+
+    question: str
+    answer: str | None
+    abstained: bool
+    model: str
+    evidence: list[RetrievedChunkOut]
+    usage: TokenUsage
+    timings: QueryTimings
+
+
+class ErrorDetail(ApiModel):
+    """``detail`` of a retrieval or generation error. ``stage`` says which one failed."""
+
+    stage: Literal["retrieval", "generation"]
+    code: str
+    message: str
+
+
+class ErrorResponse(ApiModel):
+    """Error body for ``/retrieve`` and ``/query``."""
+
+    detail: ErrorDetail
 
 
 class CorpusStats(ApiModel):

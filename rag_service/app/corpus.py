@@ -79,6 +79,28 @@ class CorpusSize:
     chunks: int
 
 
+@dataclass(frozen=True)
+class RetrievedChunk:
+    """One chunk returned by :meth:`Corpus.search`.
+
+    :ivar chunk_id: ``"<documentId>#<chunkIndex>"``.
+    :ivar document_id: Id of the parent document.
+    :ivar chunk_index: Position of the chunk within its document.
+    :ivar text: Chunk text.
+    :ivar title: Parent document title, if it had one.
+    :ivar source: Parent document source label, if it had one.
+    :ivar distance: Cosine distance to the question (0 = same direction, 2 = opposite).
+    """
+
+    chunk_id: str
+    document_id: str
+    chunk_index: int
+    text: str
+    title: str | None
+    source: str | None
+    distance: float
+
+
 def _batches(items: Sequence[_T], size: int) -> Iterator[Sequence[_T]]:
     """Yield consecutive slices of at most ``size`` items.
 
@@ -275,6 +297,47 @@ class Corpus:
                 chunks_written=len(write_ids),
                 chunks_deleted=len(stale_ids),
             )
+
+    def search(self, question: str, top_k: int) -> list[RetrievedChunk]:
+        """Return the ``top_k`` chunks nearest to ``question``, closest first.
+
+        :param question: Text to search for; embedded with the corpus's model.
+        :type question: str
+        :param top_k: Maximum number of chunks to return.
+        :type top_k: int
+        :returns: Up to ``top_k`` chunks; empty when the corpus is empty.
+        :rtype: list[RetrievedChunk]
+        """
+        [vector] = self._embedder.embed([question])
+        # Under the lock so a concurrent reset cannot swap the collection mid-query.
+        # ponytail: one lock for reads and writes, so a long ingest blocks queries.
+        with self._lock:
+            count = self._collection.count()
+            if count == 0:
+                return []
+            result = self._collection.query(
+                query_embeddings=[vector],
+                n_results=min(top_k, count),
+                include=["documents", "metadatas", "distances"],
+            )
+        return [
+            RetrievedChunk(
+                chunk_id=chunk_id,
+                document_id=str(metadata["documentId"]),
+                chunk_index=int(metadata["chunkIndex"]),
+                text=text,
+                title=metadata.get("title"),
+                source=metadata.get("source"),
+                distance=float(distance),
+            )
+            for chunk_id, text, metadata, distance in zip(
+                result["ids"][0],
+                result["documents"][0],
+                result["metadatas"][0],
+                result["distances"][0],
+                strict=True,
+            )
+        ]
 
     def reset(self) -> CorpusSize:
         """Delete every document by dropping and recreating the collection.
