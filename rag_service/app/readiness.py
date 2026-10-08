@@ -44,9 +44,9 @@ def verify_groq_model(settings: Settings) -> ReadinessCheck:
     )
     model = settings.groq_model
     try:
-        client.models.retrieve(model)
-    except groq.NotFoundError:
-        detail = f"model {model!r} is not available to this API key"
+        # Not models.retrieve: Groq answers 404 to GET /models/{id} even for
+        # models the key can use (verified 2026-10-08), so check the listing.
+        available = {entry.id for entry in client.models.list().data}
     except groq.AuthenticationError:
         detail = "Groq rejected GROQ_API_KEY"
     except groq.APITimeoutError:
@@ -56,7 +56,9 @@ def verify_groq_model(settings: Settings) -> ReadinessCheck:
     except groq.APIStatusError as error:
         detail = f"Groq returned HTTP {error.status_code}"
     else:
-        return ReadinessCheck(name=name, ok=True, detail=f"model {model!r} is available")
+        if model in available:
+            return ReadinessCheck(name=name, ok=True, detail=f"model {model!r} is available")
+        detail = f"model {model!r} is not available to this API key"
     finally:
         client.close()
     return ReadinessCheck(name=name, ok=False, detail=detail)

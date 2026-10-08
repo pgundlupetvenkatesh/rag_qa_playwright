@@ -91,19 +91,24 @@ def test_ready_never_echoes_the_api_key(
     assert "secret-value" not in get_ready(settings, model_ok).text
 
 
+def model_entry(model_id: str) -> dict[str, Any]:
+    return {"id": model_id, "object": "model", "created": 0, "owned_by": "x"}
+
+
 @pytest.mark.parametrize(
-    ("status_code", "ok", "detail"),
+    ("status_code", "listed", "ok", "detail"),
     [
-        (200, True, "model 'openai/gpt-oss-120b' is available"),
-        (404, False, "model 'openai/gpt-oss-120b' is not available to this API key"),
-        (401, False, "Groq rejected GROQ_API_KEY"),
-        (500, False, "Groq returned HTTP 500"),
+        (200, ["qwen/qwen3.8-27b", "openai/gpt-oss-120b"], True, "model 'openai/gpt-oss-120b' is available"),
+        (200, ["qwen/qwen3.8-27b"], False, "model 'openai/gpt-oss-120b' is not available to this API key"),
+        (401, [], False, "Groq rejected GROQ_API_KEY"),
+        (500, [], False, "Groq returned HTTP 500"),
     ],
 )
 def test_verify_groq_model_maps_groq_responses(
     monkeypatch: pytest.MonkeyPatch,
     make_settings: Callable[..., Settings],
     status_code: int,
+    listed: list[str],
     ok: bool,
     detail: str,
 ) -> None:
@@ -111,7 +116,7 @@ def test_verify_groq_model_maps_groq_responses(
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested.append(request.url.path)
-        body = {"id": "openai/gpt-oss-120b", "object": "model", "created": 0, "owned_by": "x"}
+        body = {"object": "list", "data": [model_entry(model_id) for model_id in listed]}
         return httpx.Response(status_code, json=body if status_code == 200 else {"error": {}})
 
     real_groq = groq.Groq
@@ -124,4 +129,4 @@ def test_verify_groq_model_maps_groq_responses(
     check = verify_groq_model(make_settings(groq_api_key="k"))
 
     assert (check.ok, check.detail) == (ok, detail)
-    assert requested == ["/openai/v1/models/openai/gpt-oss-120b"]
+    assert requested == ["/openai/v1/models"]
