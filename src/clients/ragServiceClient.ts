@@ -161,7 +161,8 @@ export class RagServiceClient implements RagClient {
   /**
    * Sends one JSON request and decodes the response.
    *
-   * @throws {@link RagClientError} when the service is unreachable, answers
+   * @throws {@link RagClientError} when the service is unreachable or exceeds
+   * the request timeout (no `status` then), answers
    * with a status outside `okStatuses`, or returns a body that is not JSON.
    */
   private async call<T>(
@@ -182,7 +183,9 @@ export class RagServiceClient implements RagClient {
       retryAfter = response.headers()['retry-after'];
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : String(cause);
-      throw new RagClientError(`${call} failed; is the RAG service running? ${reason}`);
+      throw new RagClientError(
+        `${call} got no HTTP response (service down, unreachable, or slower than the request timeout): ${reason}`,
+      );
     }
     if (!okStatuses.includes(status)) {
       throw responseError(call, status, body, retryAfter);

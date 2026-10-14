@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import { test as base } from '@playwright/test';
 
@@ -12,6 +13,8 @@ export interface Reply {
   /** Sent as JSON, or verbatim when a string. */
   body: unknown;
   headers?: Record<string, string>;
+  /** Wait this long before replying, to simulate a slow service. */
+  delayMs?: number;
 }
 
 /** A request the mock received. */
@@ -27,11 +30,14 @@ export interface Recorded {
  * Unrouted requests get a 404.
  */
 export const test = base.extend<{
-  serve: (routes: Record<string, Reply>) => Promise<{ client: RagClient; requests: Recorded[] }>;
+  serve: (
+    routes: Record<string, Reply>,
+    options?: { timeoutMs?: number },
+  ) => Promise<{ client: RagClient; requests: Recorded[] }>;
 }>({
   serve: async ({ playwright }, use) => {
     const cleanups: (() => Promise<void>)[] = [];
-    await use(async (routes) => {
+    await use(async (routes, options = {}) => {
       const requests: Recorded[] = [];
       const server = createServer(async (req, res) => {
         let raw = '';
@@ -48,6 +54,9 @@ export const test = base.extend<{
           res.writeHead(404).end();
           return;
         }
+        if (reply.delayMs) {
+          await sleep(reply.delayMs);
+        }
         res
           .writeHead(reply.status ?? 200, { 'content-type': 'application/json', ...reply.headers })
           .end(typeof reply.body === 'string' ? reply.body : JSON.stringify(reply.body));
@@ -55,7 +64,10 @@ export const test = base.extend<{
       await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
       const { port } = server.address() as AddressInfo;
 
-      const request = await playwright.request.newContext({ baseURL: `http://127.0.0.1:${port}` });
+      const request = await playwright.request.newContext({
+        baseURL: `http://127.0.0.1:${port}`,
+        timeout: options.timeoutMs,
+      });
       cleanups.push(
         () => request.dispose(),
         () => {

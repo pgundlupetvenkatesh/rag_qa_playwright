@@ -4,9 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings, get_settings
-from app.corpus import RetrievedChunk
+from app.corpus import Corpus, RetrievedChunk
 from app.generation import Generation, GenerationError
-from app.main import app, get_generator
+from app.main import app, get_corpus, get_generator
 from tests.conftest import FakeEmbedder
 
 DOCUMENTS = [
@@ -58,6 +58,12 @@ def test_query_returns_answer_evidence_and_metadata(seeded: TestClient) -> None:
 
     assert response.status_code == 200
     body = response.json()
+    # Exact key sets: an unexpected field (a leaked label, a prompt) fails here.
+    assert set(body) == {"question", "answer", "abstained", "model", "evidence", "usage", "timings"}
+    assert set(body["timings"]) == {"retrievalMs", "generationMs", "providerMs"}
+    assert set(body["evidence"][0]) == {
+        "chunkId", "documentId", "chunkIndex", "text", "title", "source", "distance", "similarity"
+    }
     assert body["question"] == "Where is Normandy?"
     assert body["answer"] == "In the north of France."
     assert body["abstained"] is False
@@ -105,6 +111,20 @@ def test_empty_corpus_fails_in_retrieval_without_calling_the_model(client: TestC
     assert response.json()["detail"]["stage"] == "retrieval"
     assert response.json()["detail"]["code"] == "corpus_empty"
     assert generator.calls == []
+
+
+def test_no_evidence_fails_in_retrieval_without_calling_the_model(
+    seeded: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus: Corpus = app.dependency_overrides[get_corpus]()
+    monkeypatch.setattr(corpus, "search", lambda question, top_k: [])
+    generator = use(FakeGenerator(ANSWER))
+
+    response = seeded.post("/query", json={"question": "Where is Normandy?"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "no_results"
+    assert generator.calls == []  # an answer without evidence would be ungrounded
 
 
 def test_missing_credentials_fail_before_retrieval(seeded: TestClient, embedder: FakeEmbedder) -> None:

@@ -127,6 +127,40 @@ test.describe('RagServiceClient against a mocked service', () => {
     });
   });
 
+  test('a provider timeout is a generation-stage error without Retry-After', async ({ serve }) => {
+    const { client } = await serve({
+      'POST /query': {
+        status: 504,
+        body: {
+          detail: { stage: 'generation', code: 'provider_timeout', message: 'Groq did not answer in time' },
+        },
+      },
+    });
+
+    await expect(client.ask('Where?')).rejects.toMatchObject({
+      status: 504,
+      stage: 'generation',
+      code: 'provider_timeout',
+      retryAfterSeconds: undefined,
+    });
+  });
+
+  test('a service slower than the client timeout is a client error without a status', async ({
+    serve,
+  }) => {
+    const { client } = await serve(
+      { 'POST /query': { delayMs: 2_000, body: {} } },
+      { timeoutMs: 200 },
+    );
+
+    const error = await client.ask('Where?').catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(RagClientError);
+    expect(error).toMatchObject({ status: undefined, stage: undefined });
+    expect(String(error)).toContain('no HTTP response');
+    expect(String(error)).toMatch(/timeout|timed out/i);
+  });
+
   test('an empty corpus is reported as a retrieval-stage error', async ({ serve }) => {
     const { client } = await serve({
       'POST /retrieve': {
@@ -168,7 +202,7 @@ test.describe('RagServiceClient against a mocked service', () => {
 
       expect(error).toBeInstanceOf(RagClientError);
       expect(error).toMatchObject({ status: undefined });
-      expect(String(error)).toContain('is the RAG service running?');
+      expect(String(error)).toContain('no HTTP response');
     } finally {
       await request.dispose();
     }

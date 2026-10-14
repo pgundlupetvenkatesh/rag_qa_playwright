@@ -128,7 +128,7 @@ bounded by `REQUEST_TIMEOUT_SECONDS`, and error messages never echo provider tex
 system-agnostic and carry no evaluation labels. `RagServiceClient` is the `rag_service` adapter: it
 maps the camelCase wire shapes, which stay private to that file, onto those types. It relies on the
 `APIRequestContext` it is given for base URL and timeout (`loadRagServiceConfig`: `RAG_BASE_URL`,
-`RAG_TIMEOUT_MS`), and it doesn't validate response shapes at run time; the integration specs assert them. Every failure is a `RagClientError` carrying the service's `stage`/`code`.
+`RAG_TIMEOUT_MS`), and it doesn't validate response shapes at run time; the integration specs assert them. Every failure is a `RagClientError` carrying the service's `stage`/`code`; with no HTTP response (down, unreachable, past `RAG_TIMEOUT_MS`) it has no `status`.
 `ready()` resolves on a 503: not-ready is an answer, not an error. `toCorpusDocuments`
 (`src/utils/corpusDocuments.ts`) reads only `context`, `source` and `metadata.title`, and
 `passageDocumentId` must stay equal to `passage_document_id` in `ingest_squad.py`. A client test
