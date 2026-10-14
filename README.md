@@ -9,10 +9,35 @@ any particular one. To have something real to test, the repo also ships a small
 separate Python component that the framework reaches only over HTTP, exactly as
 it would reach an external application.
 
+## Architecture and data flow
+
+```
+ TypeScript framework (Playwright)                    rag_service (Python, FastAPI)
+ ─────────────────────────────────                    ─────────────────────────────
+ data/golden/rag_test_cases.json                      ChromaDB corpus (.chroma/)
+   questions + labels stay here                         passages only, no labels
+          │                                                    ▲
+          ▼                                                    │ chunk + embed (local MiniLM)
+ tests ──► RagClient ──► RagServiceClient ──HTTP──► POST /corpus/documents
+                                          ──HTTP──► POST /retrieve ──► nearest chunks
+                                          ──HTTP──► POST /query ────► nearest chunks ──► Groq LLM
+                                                                                          │
+                                          ◄──────── answer or abstention + evidence ◄─────┘
+```
+
+- **Golden data** (questions, accepted answers, `answerable`) never leaves the test
+  side. Only passage text, title and source are ingested.
+- **Tests depend on `RagClient`**, not on `rag_service`. Another RAG app needs only
+  another adapter.
+- **Only `/query` calls the LLM.** Ingestion and `/retrieve` run locally at no cost.
+
+[`rag_service/README.md`](rag_service/README.md#architecture-and-data-flow) has the
+service-side detail, and [`INSIGHT.md`](INSIGHT.md) explains the concepts from scratch.
+
 ## Golden Dataset
 
 Loading SQuAD 2.0, normalizing a small slice of it, and validating that slice from a Playwright test.
-No RAG client, retrieval scoring, adversarial testing, or UI/API tests exist yet.
+Retrieval scoring, adversarial testing and UI tests don't exist yet.
 
 ### How the pieces fit
 
@@ -281,6 +306,12 @@ uv pip install -r requirements.txt
 cp .env.example .env           # then set GROQ_API_KEY; .env is gitignored
 ```
 
+Put your real key only in `rag_service/.env` (gitignored, and the commit hook blocks
+staging any `.env` file) or in a real environment variable. `.env.example` holds
+placeholders only. See
+[Groq API key](rag_service/README.md#groq-api-key) for handling, CI and what to do if a
+key leaks.
+
 ## Usage
 
 ### Regenerate the golden dataset
@@ -325,6 +356,26 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+Load the corpus once, with the service running (SQuAD passages and titles only; about
+2 minutes the first time, under a second when repeated):
+
+```bash
+python scripts/ingest_squad.py
+curl http://127.0.0.1:8000/corpus      # {"documents": 1204, "chunks": 1473, ...}
+```
+
+Example requests:
+
+```bash
+# Retrieval only: no LLM, free.
+curl -s -X POST http://127.0.0.1:8000/retrieve -H 'content-type: application/json' \
+  -d '{"question": "In what country is Normandy located?", "topK": 3}'
+
+# Retrieval plus a grounded answer: one Groq call.
+curl -s -X POST http://127.0.0.1:8000/query -H 'content-type: application/json' \
+  -d '{"question": "In what country is Normandy located?"}'
+```
+
 The unit tests ignore `.env` and the shell environment, inject settings through FastAPI's
 dependency overrides, and replace Groq with a mocked client or HTTP transport. They need neither a
 key nor a network connection.
@@ -350,6 +401,16 @@ npm run test:service      # a running service; ingestion and retrieval, no LLM c
 npm run test:groq         # a running service holding a working GROQ_API_KEY (live calls)
 npm run test:integration  # service + groq
 ```
+
+| Suite | Needs | Groq calls |
+|---|---|---|
+| `npm test` (`dataset` + `client`) | Nothing (offline) | None |
+| `pytest` in `rag_service/` | Nothing (offline; Groq and the embedder are faked) | None |
+| `npm run test:service` | The service running at `RAG_BASE_URL` | None |
+| `npm run test:groq` | The service running **with a working `GROQ_API_KEY`** | About 2 answers per run |
+
+Every test that reaches Groq is tagged `@groq`, and only the `groq` project runs them,
+so the ordinary commands never use your Groq quota.
 
 `service` and `groq` first run a setup step that ingests the 60 golden passages through
 `toCorpusDocuments` (`src/utils/corpusDocuments.ts`). That helper sends each distinct
@@ -391,7 +452,7 @@ src/clients/ragClient.ts          RagClient interface and types (system-agnostic
 src/clients/ragServiceClient.ts   RagClient adapter for rag_service (APIRequestContext)
 src/config/ragServiceConfig.ts    RAG_BASE_URL / RAG_TIMEOUT_MS
 tests/dataset/ragDataset.spec.ts  dataset validation test
-tests/client/                     adapter tests against a local mock server (offline)
+tests/client/                     adapter tests against a local mock server, config tests (offline)
 tests/integration/                tests against a running service; @groq ones need a live key
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
@@ -403,6 +464,21 @@ rag_service/.env.example          placeholder-only template for the gitignored r
 rag_service/README.md             service setup, configuration, ingestion, performance
 INSIGHT.md                        beginner explainer: RAG, vectors, embeddings, design choices
 ```
+
+## Known limitations and costs
+
+- **Costs:** only Groq calls cost anything. That means one completion per `/query`
+  (roughly 800-1,000 prompt tokens with the default 4 chunks) and one model listing per
+  `/ready`. On the free tier these count against rate limits. Everything else runs
+  locally.
+- **The reference service has no authentication** and runs as one worker process. It is
+  meant for local testing, bound to `127.0.0.1`.
+- **The tests check contracts, not quality.** Nothing yet measures whether retrieval found
+  the right passage or the answer is correct.
+- **Retrieval has no relevance threshold.** Abstention relies on the model.
+
+The full list is in
+[`rag_service/README.md`](rag_service/README.md#known-limitations-and-costs).
 
 ## Planned
 
