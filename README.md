@@ -219,6 +219,33 @@ The Groq model id is configurable, and the default (`openai/gpt-oss-120b`) is no
 assumed to work. Which models a key can use depends on the Groq account, so
 `/ready` asks Groq and reports whether the configured model is available.
 
+### Embeddings
+
+Retrieval finds passages by meaning, not by keyword. The embedding model
+`all-MiniLM-L6-v2` turns each chunk, and later each question, into a vector of 384
+numbers, with similar meanings giving nearby vectors. ChromaDB stores the chunk
+vectors and returns the ones closest to the question by cosine similarity. The API
+reports `similarity = 1 - distance`, so higher means more related. Only those chunks
+go to the Groq model, which writes the answer.
+
+| | Embedding model | Language model |
+|---|---|---|
+| Job | Find the relevant chunks | Write the answer from them |
+| Model | `all-MiniLM-L6-v2` | `openai/gpt-oss-120b` (default) |
+| Runs | Locally, through Chroma's ONNX build, no key needed | On Groq, needs `GROQ_API_KEY` |
+
+- **Limit:** it reads at most 256 tokens, which is why passages are split into
+  chunks of about 1,000 characters.
+- **One model per corpus:** vectors from different models can't be compared, so the
+  collection refuses to open under a different model. Switching models means
+  re-ingesting the whole corpus.
+- **Why MiniLM is kept for now:** Groq offers no embedding model to this account.
+  Stronger local models exist, such as `BAAI/bge-small-en-v1.5`, but switching waits
+  for a retrieval hit-rate metric that can show whether one actually retrieves better.
+
+[`INSIGHT.md`](INSIGHT.md) explains vectors and embeddings from the beginning and
+compares other models.
+
 ## Setup
 
 ### Node
@@ -302,6 +329,36 @@ The unit tests ignore `.env` and the shell environment, inject settings through 
 dependency overrides, and replace Groq with a mocked client or HTTP transport. They need neither a
 key nor a network connection.
 
+### Test a RAG service through the framework client
+
+Tests talk to a RAG system only through the `RagClient` interface
+(`src/clients/ragClient.ts`), which covers readiness, ingestion, retrieval and answers.
+`RagServiceClient` is its adapter for the reference service, built on Playwright's
+`APIRequestContext`. To target another RAG app, write another adapter; the tests stay as
+they are. Two environment variables configure where the service is and how long to wait:
+
+| Variable         | Default                 | Meaning                                                    |
+| ---------------- | ----------------------- | ---------------------------------------------------------- |
+| `RAG_BASE_URL`   | `http://127.0.0.1:8000` | Base URL of the RAG service under test.                    |
+| `RAG_TIMEOUT_MS` | `60000`                 | Per-request timeout. Keep it above the service's Groq timeout. |
+
+The suites are split by what they need:
+
+```bash
+npm run test:client       # adapter vs a local mock server: offline, no service, no key
+npm run test:service      # a running service; ingestion and retrieval, no LLM calls
+npm run test:groq         # a running service holding a working GROQ_API_KEY (live calls)
+npm run test:integration  # service + groq
+```
+
+`service` and `groq` first run a setup step that ingests the 60 golden passages through
+`toCorpusDocuments` (`src/utils/corpusDocuments.ts`). That helper sends each distinct
+passage once, under the same `squad-<sha1>` id that `ingest_squad.py` uses, with only its
+title and source; questions, answers and `answerable` never leave the test side. Ingestion
+is idempotent, so against an already-loaded corpus the setup reports all 60 as unchanged,
+and nothing is ever deleted. The Groq tests check the response contract (an answer, or
+`null` with `abstained: true`, plus evidence), not whether the answer is right.
+
 ### Generate the API documentation
 
 ```bash
@@ -318,7 +375,7 @@ does not resolve, rather than emitting a dead link.
 Other commands:
 
 ```bash
-npm test          # run the full Playwright suite
+npm test          # the offline suites: dataset + client (no service needed)
 npm run typecheck # tsc --noEmit
 ```
 
@@ -329,7 +386,13 @@ data/golden/rag_test_cases.json   generated golden dataset (committed)
 scripts/prepareDataset.py         SQuAD 2.0 -> normalized JSON
 src/models/ragTestCase.ts         normalized test case contract
 src/utils/datasetLoader.ts        loads + validates the golden dataset
+src/utils/corpusDocuments.ts      golden cases -> label-free corpus documents
+src/clients/ragClient.ts          RagClient interface and types (system-agnostic)
+src/clients/ragServiceClient.ts   RagClient adapter for rag_service (APIRequestContext)
+src/config/ragServiceConfig.ts    RAG_BASE_URL / RAG_TIMEOUT_MS
 tests/dataset/ragDataset.spec.ts  dataset validation test
+tests/client/                     adapter tests against a local mock server (offline)
+tests/integration/                tests against a running service; @groq ones need a live key
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
 rag_service/app/                  reference RAG service: FastAPI app, settings, readiness, chunking, corpus and retrieval, Groq generation
@@ -338,10 +401,11 @@ rag_service/tests/                service unit tests (pytest)
 rag_service/requirements.txt      service Python dependencies
 rag_service/.env.example          placeholder-only template for the gitignored rag_service/.env
 rag_service/README.md             service setup, configuration, ingestion, performance
+INSIGHT.md                        beginner explainer: RAG, vectors, embeddings, design choices
 ```
 
 ## Planned
 
-Not yet implemented: the Playwright API adapter and API tests that drive it, Ragas (RAG evaluation),
+Not yet implemented: retrieval and answer-quality metrics over the golden set, Ragas (RAG evaluation),
 Promptfoo (LLM/adversarial testing), Allure (reporting), Langfuse (observability),
 and UI tests.

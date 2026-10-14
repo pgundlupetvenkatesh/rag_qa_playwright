@@ -19,9 +19,11 @@ Delivered: Milestone 1 (golden evaluation dataset and its validation). Milestone
 `rag_service/`: typed settings, `GET /health`, `GET /ready`, and a persistent ChromaDB corpus with
 chunked ingestion (`POST /corpus/documents`), stats (`GET /corpus`), guarded reset
 (`DELETE /corpus`), plus `scripts/ingest_squad.py` to load the SQuAD validation passages;
-retrieval (`POST /retrieve`, no LLM) and grounded Groq answers (`POST /query`).
+retrieval (`POST /retrieve`, no LLM) and grounded Groq answers (`POST /query`). On the TS side:
+the `RagClient` abstraction with its `RagServiceClient` adapter, env-based service config, the
+golden-passage ingestion helper, and Playwright projects for mocked and live integration tests.
 
-**Not built yet — do not assume these exist:** any TS RAG client/adapter, API tests, Playwright projects/fixtures, browser projects,
+**Not built yet — do not assume these exist:** retrieval hit-rate or answer-quality metrics, browser projects,
 Ragas, Promptfoo, Allure, Langfuse, UI tests.
 
 When asked to add functionality, build it rather than assuming helpers are available.
@@ -30,8 +32,12 @@ When asked to add functionality, build it rather than assuming helpers are avail
 
 ```bash
 npm install
-npm test                    # full Playwright suite
+npm test                    # offline projects only: dataset + client
 npm run test:dataset        # dataset validation only
+npm run test:client         # RagServiceClient vs a local mock server (offline)
+npm run test:service        # needs the service at RAG_BASE_URL (default 127.0.0.1:8000); no LLM
+npm run test:groq           # @groq tests: the service must hold a working GROQ_API_KEY
+npm run test:integration    # service + groq
 npm run typecheck           # tsc --noEmit
 npm run docs                # TypeDoc -> docs/api (generated, gitignored)
 npx playwright test tests/dataset/ragDataset.spec.ts:29   # single test by line
@@ -50,8 +56,9 @@ python -m app                # serves on API_HOST:API_PORT (default 127.0.0.1:80
 python scripts/ingest_squad.py [--reset]   # load 1,204 SQuAD passages via the API (~2 min first time)
 ```
 
-Playwright browsers are already installed locally. No browser project is declared in
-`playwright.config.ts` yet — Milestone 1 tests are pure Node assertions.
+Playwright browsers are already installed locally. `playwright.config.ts` declares projects
+`dataset`, `client`, `service-setup`, `service` (`grepInvert: /@groq/`) and `groq` (`grep: /@groq/`);
+the last two depend on `service-setup`. No browser project yet.
 
 ## Architecture
 
@@ -116,6 +123,17 @@ answer code is in `app/generation.py` behind the `Generator` protocol (`get_gene
 Abstention is the model replying the exact `ABSTAIN_SENTINEL`; `evidence` in the response is what
 retrieval returned, never model-claimed citations. Groq calls are one attempt (`max_retries=0`),
 bounded by `REQUEST_TIMEOUT_SECONDS`, and error messages never echo provider text.
+
+**Tests reach a RAG system only through `RagClient`** (`src/clients/ragClient.ts`). Its types are
+system-agnostic and carry no evaluation labels. `RagServiceClient` is the `rag_service` adapter: it
+maps the camelCase wire shapes, which stay private to that file, onto those types. It relies on the
+`APIRequestContext` it is given for base URL and timeout (`loadRagServiceConfig`: `RAG_BASE_URL`,
+`RAG_TIMEOUT_MS`), and it doesn't validate response shapes at run time; the integration specs assert them. Every failure is a `RagClientError` carrying the service's `stage`/`code`.
+`ready()` resolves on a 503: not-ready is an answer, not an error. `toCorpusDocuments`
+(`src/utils/corpusDocuments.ts`) reads only `context`, `source` and `metadata.title`, and
+`passageDocumentId` must stay equal to `passage_document_id` in `ingest_squad.py`. A client test
+pins one id, and the live setup reports 60/60 `unchanged` against a corpus loaded by the Python script.
+Integration tests never reset the corpus; they only make idempotent ingests.
 
 **Destructive endpoints are guarded.** `DELETE /corpus` obeys `ALLOW_RESET`: unset → loopback
 callers only (checked on the TCP peer address, not `API_HOST`); `true` → anyone; `false` → 403.
