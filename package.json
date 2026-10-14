@@ -7,8 +7,12 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --project=dataset --project=client",
     "test:dataset": "playwright test tests/dataset",
+    "test:client": "playwright test --project=client",
+    "test:service": "playwright test --project=service",
+    "test:groq": "playwright test --project=groq",
+    "test:integration": "playwright test --project=service --project=groq",
     "typecheck": "tsc --noEmit",
     "docs": "typedoc"
   },
