@@ -356,6 +356,17 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+Run the service in the foreground of its own terminal, and stop it with Ctrl+C when you're
+done. If one was left running in the background, stop whatever is listening on the port:
+
+```bash
+lsof -ti tcp:8000 -sTCP:LISTEN | xargs kill
+```
+
+Stop the service before you delete `rag_service/.chroma`. A running service holds that
+folder open, and deleting it under the service makes later requests fail with 500. To empty
+the corpus while the service runs, use `DELETE /corpus` or `ingest_squad.py --reset`.
+
 Load the corpus once, with the service running (SQuAD passages and titles only; about
 2 minutes the first time, under a second when repeated):
 

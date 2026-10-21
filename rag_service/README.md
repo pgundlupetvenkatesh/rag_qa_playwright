@@ -95,6 +95,11 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+Stop it with Ctrl+C in its terminal. If it was left running in the background:
+`lsof -ti tcp:8000 -sTCP:LISTEN | xargs kill`. Stop the service before deleting the Chroma
+folder; deleting it under a running service makes later requests fail with 500. Use
+`DELETE /corpus` to empty it while the service runs.
+
 ### Smoke check
 
 The end-to-end check after setting `GROQ_API_KEY` in `.env`. Run it from
