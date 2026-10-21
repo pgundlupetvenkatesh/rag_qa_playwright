@@ -1,0 +1,158 @@
+# CI for the framework and the reference RAG service.
+#
+# Pull requests and pushes run without a Groq key and make no LLM calls.
+# Live Groq tests run only from a manual dispatch with `groq: true`, and need
+# the repository secret GROQ_API_KEY (never available to fork PRs).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      groq:
+        description: Also run the @groq tests (live Groq calls; uses the GROQ_API_KEY secret)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  framework:
+    name: Typecheck, docs, offline Playwright tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run docs
+      # dataset (Milestone 1) + client (mock server); no service, no browsers.
+      - run: npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-offline
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
+  service-unit:
+    name: rag_service unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: rag_service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: rag_service/.python-version
+          cache: pip
+          cache-dependency-path: rag_service/requirements.txt
+      - run: pip install -r requirements.txt
+      # FakeEmbedder and a fake generator: no model download, no Groq.
+      - run: pytest
+
+  integration:
+    name: Live service ${{ inputs.groq && '+ Groq' || '(no LLM)' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RAG_BASE_URL: http://127.0.0.1:8000
+      LOG_DIR: ${{ github.workspace }}/ci-logs
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: rag_service/.python-version
+          cache: pip
+          cache-dependency-path: rag_service/requirements.txt
+      - name: Cache the ONNX embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/chroma/onnx_models
+          key: chroma-onnx-all-MiniLM-L6-v2
+      - run: npm ci
+      - run: pip install -r rag_service/requirements.txt
+
+      - name: Refuse a Groq run without the secret
+        if: inputs.groq
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          [ -n "$GROQ_API_KEY" ] && exit 0
+          echo "::error::groq=true but the GROQ_API_KEY repository secret is not set"
+          exit 1
+
+      - name: Start the RAG service
+        working-directory: rag_service
+        env:
+          # Only this step sees the key, and only on a manual Groq run; blank means unset.
+          GROQ_API_KEY: ${{ inputs.groq && secrets.GROQ_API_KEY || '' }}
+          # Fresh, job-local vector store; only the 60 golden passages go in.
+          CHROMA_PATH: ${{ github.workspace }}/.ci-chroma
+        run: |
+          mkdir -p "$LOG_DIR"
+          nohup python -m app > "$LOG_DIR/rag_service.log" 2>&1 &
+          echo $! > "$LOG_DIR/rag_service.pid"
+
+      - name: Wait for liveness (/health)
+        run: |
+          for _ in $(seq 60); do
+            curl -fsS "$RAG_BASE_URL/health" && exit 0
+            sleep 1
+          done
+          echo "::error::service did not answer /health within 60s"
+          exit 1
+
+      # /ready checks the Groq key and model, so it is only meaningful with a key.
+      - name: Wait for readiness (/ready)
+        if: inputs.groq
+        run: curl -fsS --retry 5 --retry-delay 2 --retry-all-errors "$RAG_BASE_URL/ready"
+
+      # service-setup ingests the golden passages (the controlled corpus), then
+      # the service project runs ingestion and retrieval tests. No LLM calls.
+      - name: Ingest golden passages and run service tests
+        run: npm run test:service
+
+      - name: Run live Groq tests
+        if: inputs.groq
+        run: npm run test:groq
+
+      - name: Corpus stats
+        if: always()
+        run: curl -sS "$RAG_BASE_URL/corpus" | tee "$LOG_DIR/corpus.json" || true
+
+      - name: Stop the RAG service
+        if: always()
+        run: |
+          if [ -f "$LOG_DIR/rag_service.pid" ]; then
+            kill "$(cat "$LOG_DIR/rag_service.pid")" || true
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-${{ inputs.groq && 'groq' || 'service' }}
+          path: |
+            playwright-report/
+            test-results/
+            ci-logs/
+          if-no-files-found: ignore

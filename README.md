@@ -440,9 +440,38 @@ npm test          # the offline suites: dataset + client (no service needed)
 npm run typecheck # tsc --noEmit
 ```
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It needs no
+secrets and makes no Groq calls. It has three parallel jobs:
+
+| Job            | What it runs                                                                                       |
+|----------------|----------------------------------------------------------------------------------------------------|
+| `framework`    | `npm ci`, `npm run typecheck`, `npm run docs`, `npm test` (dataset + client)                       |
+| `service-unit` | `pip install -r rag_service/requirements.txt`, `pytest` (fakes only)                               |
+| `integration`  | starts `python -m app` with no key and an empty job-local corpus, waits for `/health`, runs `npm run test:service` |
+
+The integration job's `service-setup` ingests the 60 golden passages through the client. That is
+the controlled corpus: titles and passages only. The job never loads the full SQuAD set and never
+resets anything. After the tests it prints `GET /corpus` and stops the service. It always uploads
+`playwright-report/`, `test-results/` and `ci-logs/` (the service log and corpus stats) as an
+artifact. The ONNX embedding model is cached between runs.
+
+**Live Groq tests are opt-in.** To run them:
+
+1. Add a repository secret `GROQ_API_KEY` (Settings → Secrets and variables → Actions).
+2. Start the workflow by hand, with the `groq` box ticked: **Actions → CI → Run workflow**, or
+   `gh workflow run ci.yml -f groq=true`.
+
+Only that run passes the key to the service, and only to the step that starts it. The run waits
+for `/ready`, then also runs `npm run test:groq`, which makes two Groq completions plus model
+listings. If the secret is missing, the run fails at once. Pull requests from forks never
+receive secrets.
+
 ## Layout
 
 ```
+.github/workflows/ci.yml          CI: offline checks, pytest, keyless service tests; Groq on manual dispatch
 data/golden/rag_test_cases.json   generated golden dataset (committed)
 scripts/prepareDataset.py         SQuAD 2.0 -> normalized JSON
 src/models/ragTestCase.ts         normalized test case contract

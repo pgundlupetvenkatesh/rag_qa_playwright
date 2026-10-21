@@ -60,6 +60,13 @@ Playwright browsers are already installed locally. `playwright.config.ts` declar
 `dataset`, `client`, `service-setup`, `service` (`grepInvert: /@groq/`) and `groq` (`grep: /@groq/`);
 the last two depend on `service-setup`. No browser project yet.
 
+CI is `.github/workflows/ci.yml`. On PRs and on pushes to `main` it runs three jobs:
+- `framework`: typecheck, docs and `npm test`
+- `service-unit`: pytest
+- `integration`: a keyless service with an empty job-local `CHROMA_PATH`, gated on `/health` because `/ready` is 503 without a key, then `npm run test:service`
+
+The `@groq` tests run only on a manual dispatch with `groq=true` (`gh workflow run ci.yml -f groq=true`). That run gives the `GROQ_API_KEY` secret only to the step that starts the service. Keep ordinary CI free of keys and Groq calls.
+
 ## Architecture
 
 **The golden dataset is the contract.** `src/models/ragTestCase.ts` defines `RagTestCase`, the

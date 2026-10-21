@@ -77,7 +77,9 @@ GROQ_API_KEY=your_groq_api_key_here    # placeholder; paste your own key locally
   `**********`. `/ready` reports only whether a key is set. Error messages are
   written by the service, not copied from Groq.
 - **For CI**, pass the key as a masked secret environment variable
-  (`GROQ_API_KEY`), not as a file in the workspace.
+  (`GROQ_API_KEY`), not as a file in the workspace. The repo's workflow does this
+  only on a manual run with `groq=true`; see
+  [Continuous integration](../README.md#continuous-integration).
 - **Without a key** the service still runs: `/health`, `/corpus`, ingestion and
   `/retrieve` work, `/ready` returns 503, and `/query` returns 503
   `missing_credentials`.
