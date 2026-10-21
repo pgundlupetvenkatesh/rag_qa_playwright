@@ -387,6 +387,41 @@ curl -s -X POST http://127.0.0.1:8000/query -H 'content-type: application/json' 
   -d '{"question": "In what country is Normandy located?"}'
 ```
 
+#### Try it in the browser
+
+With the service running, open **http://127.0.0.1:8000/docs**. FastAPI generates this
+interactive page from the API itself, and it lists every endpoint with its request and
+response shapes. To send a request:
+
+1. Click an endpoint.
+2. Click **Try it out**.
+3. Edit the JSON body.
+4. Click **Execute**.
+
+The response appears below, together with the matching `curl` command.
+
+| Endpoint         | Example body                                    | Groq cost         |
+|------------------|-------------------------------------------------|-------------------|
+| `GET /corpus`    | none                                            | free              |
+| `POST /retrieve` | `{"question": "Where is Normandy?", "topK": 3}` | free, search only |
+| `POST /query`    | `{"question": "Where is Normandy?"}`            | one completion    |
+
+`DELETE /corpus` really empties the corpus; `python scripts/ingest_squad.py` reloads it.
+
+<details>
+<summary><code>POST /retrieve</code>: the nearest chunks with their similarity scores</summary>
+
+![POST /retrieve in the /docs page](docs/images/rag_service_post_retrieve.png)
+
+</details>
+
+<details>
+<summary><code>POST /query</code>: an answer, the evidence it used, token usage and timings</summary>
+
+![POST /query in the /docs page](docs/images/rag_service_post_query.png)
+
+</details>
+
 The unit tests ignore `.env` and the shell environment, inject settings through FastAPI's
 dependency overrides, and replace Groq with a mocked client or HTTP transport. They need neither a
 key nor a network connection.
@@ -496,6 +531,7 @@ tests/client/                     adapter tests against a local mock server, con
 tests/integration/                tests against a running service; @groq ones need a live key
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
+docs/images/                      README screenshots (the service's /docs page)
 rag_service/app/                  reference RAG service: FastAPI app, settings, readiness, chunking, corpus and retrieval, Groq generation
 rag_service/scripts/ingest_squad.py  loads SQuAD validation passages into the service
 rag_service/tests/                service unit tests (pytest)

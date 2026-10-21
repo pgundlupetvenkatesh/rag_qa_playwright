@@ -95,6 +95,9 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+To try the endpoints in a browser, open http://127.0.0.1:8000/docs (FastAPI's interactive
+page; see [Try it in the browser](../README.md#try-it-in-the-browser) for screenshots).
+
 Stop it with Ctrl+C in its terminal. If it was left running in the background:
 `lsof -ti tcp:8000 -sTCP:LISTEN | xargs kill`. Stop the service before deleting the Chroma
 folder; deleting it under a running service makes later requests fail with 500. Use
