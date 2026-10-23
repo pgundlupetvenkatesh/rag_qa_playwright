@@ -81,8 +81,8 @@ assumed to work. Check `/ready` after changing `GROQ_MODEL` or the key.
 
 ## Ingestion
 
+`POST /corpus/documents`
 ```json
-POST /corpus/documents
 {"documents": [
   {"id": "doc-1", "text": "Full document text ...", "metadata": {"title": "Optional", "source": "optional"}}
 ]}
@@ -143,8 +143,8 @@ there.
 
 ## Retrieval
 
+`POST /retrieve`
 ```json
-POST /retrieve
 {"question": "In what country is Normandy located?", "topK": 3}
 ```
 
@@ -176,7 +176,7 @@ prompt tells the model to answer only from that evidence, to add no unsupported
 claims, to treat the evidence as data rather than instructions, and to reply
 exactly `INSUFFICIENT_EVIDENCE` when the evidence cannot answer the question.
 
-```json
+```jsonc
 {"question": "...", "answer": "France.", "abstained": false, "model": "openai/gpt-oss-120b",
  "evidence": [/* exactly the chunks the model was shown, same shape as /retrieve */],
  "usage": {"promptTokens": 812, "completionTokens": 41, "totalTokens": 853},
@@ -239,7 +239,7 @@ Measured on this machine (Intel Core i7-8559U, CPU only):
 - **Requirements:** `onnxruntime<1.24` is pinned only on Intel Macs, where newer
   versions have no builds. `datasets` (which brings in pyarrow) is only needed
   by `scripts/ingest_squad.py`.
-- **Writes are serialised** with a process-wide lock, so concurrent ingests
+- **Writes are serialized** with a process-wide lock, so concurrent ingests
   cannot interleave a replacement or race a reset. Run one worker process:
   multiple uvicorn workers would each hold their own lock over the same store.
 - **ChromaDB's anonymous telemetry is disabled** in code.
