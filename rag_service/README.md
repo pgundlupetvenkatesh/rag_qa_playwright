@@ -336,12 +336,12 @@ Measured on this machine (Intel Core i7-8559U, CPU only):
 
 ## Test
 
-| Suite | Command | Needs | Groq calls |
-|---|---|---|---|
-| Service unit tests | `cd rag_service && pytest` | Nothing (offline) | None |
-| Framework, offline | `npm test` (repo root) | Nothing; client tests use a local mock server | None |
-| Framework, live service | `npm run test:service` | Service running at `RAG_BASE_URL` | None |
-| Framework, live Groq | `npm run test:groq` | Service running **with a working `GROQ_API_KEY`** | About 2 answers per run, plus `/ready`'s model check |
+| Suite                   | Command                    | Needs                                             | Groq calls                                           |
+|-------------------------|----------------------------|---------------------------------------------------|------------------------------------------------------|
+| Service unit tests      | `cd rag_service && pytest` | Nothing (offline)                                 | None                                                 |
+| Framework, offline      | `npm test` (repo root)     | Nothing; client tests use a local mock server     | None                                                 |
+| Framework, live service | `npm run test:service`     | Service running at `RAG_BASE_URL`                 | None                                                 |
+| Framework, live Groq    | `npm run test:groq`        | Service running **with a working `GROQ_API_KEY`** | About 2 answers per run, plus `/ready`'s model check |
 
 ```bash
 # Offline: safe to run anywhere, costs nothing.
@@ -384,7 +384,7 @@ temporary Chroma directory.
 - **No authentication.** Any caller that can reach the port can query or
   ingest. The default bind is `127.0.0.1`; don't expose it publicly as is.
   `DELETE /corpus` alone is guarded (see [Reset](#reset)).
-- **One worker process.** Writes are serialised by an in-process lock.
+- **One worker process.** Writes are serialized by an in-process lock.
 - **Retrieval always returns `topK` chunks**, even when none is relevant; there
   is no similarity threshold. Deciding that the evidence is insufficient is the
   model's job, so abstention quality depends on the model following the
