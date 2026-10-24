@@ -8,6 +8,48 @@ It has configuration, health and readiness probes, document ingestion into a
 persistent ChromaDB corpus, retrieval, and answer generation through Groq that
 is grounded in the retrieved evidence.
 
+## Architecture and data flow
+
+```
+ Ingest (once; no LLM)
+ SQuAD 2.0 validation ──title + context only──► scripts/ingest_squad.py
+                                                    │ POST /corpus/documents
+                                                    ▼
+                         chunk (1000/200 chars) ─► embed (all-MiniLM-L6-v2, ONNX, local)
+                                                    ▼
+                                         ChromaDB, persistent in .chroma/
+
+ Ask
+ client ── POST /retrieve ─► embed question ─► nearest TOP_K chunks ─► evidence   (no LLM)
+ client ── POST /query ────► same retrieval ─► Groq (GROQ_MODEL) ────► answer or abstention
+                                                                       + the evidence it was shown
+```
+
+- **Two models.** The embedding model runs locally and costs nothing. Only
+  `/query` (and the model check in `/ready`) calls Groq.
+- **No evaluation labels.** The service never reads `data/golden/`. Questions,
+  answers and answerability labels stay with the tests, so a test cannot pass
+  because the corpus contains the answer.
+- **HTTP is the only interface.** The Playwright framework talks to it through
+  `RagServiceClient`. Neither side imports the other's code.
+
+## Layout
+
+```
+app/__main__.py      python -m app: starts uvicorn on API_HOST:API_PORT
+app/main.py          FastAPI routes, dependency wiring, error rendering
+app/config.py        Settings: env vars, then rag_service/.env, validated at startup
+app/schemas.py       request/response models (camelCase on the wire); closed metadata allowlist
+app/readiness.py     /ready checks: key present, Groq model available, Chroma path usable
+app/chunking.py      word-aligned overlapping chunks
+app/embeddings.py    Embedder protocol; MiniLM through Chroma's ONNX build
+app/corpus.py        ChromaDB corpus: idempotent ingest, search, reset
+app/generation.py    Generator protocol; Groq prompt, abstention, error mapping
+scripts/ingest_squad.py   loads SQuAD passages through the public API
+tests/               pytest suite, offline (fake embedder, mocked Groq)
+.env.example         placeholder-only template for the gitignored .env
+```
+
 ## Setup
 
 Requires [uv](https://docs.astral.sh/uv/) and Python 3.13 (pinned in `.python-version`).
@@ -19,6 +61,31 @@ uv pip install -r requirements.txt
 cp .env.example .env        # then set GROQ_API_KEY; .env is gitignored
 ```
 
+### Groq API key
+
+Create a key at <https://console.groq.com/keys> and put it in `rag_service/.env`:
+
+```bash
+GROQ_API_KEY=your_groq_api_key_here    # placeholder; paste your own key locally
+```
+
+- **Keep the key in `.env` or a real environment variable, nowhere else.**
+  `rag_service/.gitignore` ignores `.env` and `.env.*` (except `.env.example`),
+  and the repo's commit hook blocks staging any `.env` file. Never put a real key
+  in `.env.example`, a README, a test or a commit message.
+- **The service never exposes it.** The setting is a secret type that renders as
+  `**********`. `/ready` reports only whether a key is set. Error messages are
+  written by the service, not copied from Groq.
+- **For CI**, pass the key as a masked secret environment variable
+  (`GROQ_API_KEY`), not as a file in the workspace. The repo's workflow does this
+  only on a manual run with `groq=true`; see
+  [Continuous integration](../README.md#continuous-integration).
+- **Without a key** the service still runs: `/health`, `/corpus`, ingestion and
+  `/retrieve` work, `/ready` returns 503, and `/query` returns 503
+  `missing_credentials`.
+- **If a key leaks**, revoke it in the Groq console and create a new one.
+  Removing it from Git history alone is not enough.
+
 ## Run
 
 ```bash
@@ -27,6 +94,14 @@ uvicorn app.main:app --port 8000     # alternative; --host/--port come from the 
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
+
+To try the endpoints in a browser, open http://127.0.0.1:8000/docs (FastAPI's interactive
+page; see [Try it in the browser](../README.md#try-it-in-the-browser) for screenshots).
+
+Stop it with Ctrl+C in its terminal. If it was left running in the background:
+`lsof -ti tcp:8000 -sTCP:LISTEN | xargs kill`. Stop the service before deleting the Chroma
+folder; deleting it under a running service makes later requests fail with 500. Use
+`DELETE /corpus` to empty it while the service runs.
 
 ### Smoke check
 
@@ -261,13 +336,66 @@ Measured on this machine (Intel Core i7-8559U, CPU only):
 
 ## Test
 
+| Suite                   | Command                    | Needs                                             | Groq calls                                           |
+|-------------------------|----------------------------|---------------------------------------------------|------------------------------------------------------|
+| Service unit tests      | `cd rag_service && pytest` | Nothing (offline)                                 | None                                                 |
+| Framework, offline      | `npm test` (repo root)     | Nothing; client tests use a local mock server     | None                                                 |
+| Framework, live service | `npm run test:service`     | Service running at `RAG_BASE_URL`                 | None                                                 |
+| Framework, live Groq    | `npm run test:groq`        | Service running **with a working `GROQ_API_KEY`** | About 2 answers per run, plus `/ready`'s model check |
+
 ```bash
-pytest
+# Offline: safe to run anywhere, costs nothing.
+cd rag_service && source .venv/bin/activate && pytest && cd ..
+npm test
+
+# Live: start the service in another terminal first.
+cd rag_service && source .venv/bin/activate && python -m app
+npm run test:service             # retrieval and ingestion, no LLM
+npm run test:groq                # tests tagged @groq; uses your Groq quota
+npm run test:integration         # both
 ```
 
-Tests read neither your shell's variables nor `.env`, and they make no network
+Live tests are marked twice: by Playwright project (`service`, `groq`) and by
+the `@groq` tag on every test that reaches Groq. The live setup re-ingests the
+60 golden passages, which is idempotent and never resets the corpus. Point the
+tests elsewhere with `RAG_BASE_URL` (and `RAG_TIMEOUT_MS`, default 60000).
+
+The pytest suite reads neither your shell's variables nor `.env`, and they make no network
 calls. Groq is replaced by a mocked client (generation) or a mock HTTP transport
 (readiness), so no key is needed and no API charges are incurred. The embedding model is replaced by a
 deterministic fake (so the ~80 MB model is never needed), and settings and the
 corpus are injected through FastAPI dependency overrides. Each test gets its own
 temporary Chroma directory.
+## Known limitations and costs
+
+**Costs**
+
+- Only Groq calls cost anything: one chat completion per `/query`, plus one
+  model listing per `/ready` (no tokens). Ingestion, embedding and `/retrieve`
+  run locally and are free.
+- A `/query` with the default 4 chunks uses roughly 800-1,000 prompt tokens.
+  On Groq's free tier this counts against rate limits; on a paid plan it is
+  billed per token. Check current limits and prices in the Groq console.
+- `pytest` and `npm test` never call Groq. Only `npm run test:groq` (and
+  `test:integration`) does.
+
+**Limitations**
+
+- **No authentication.** Any caller that can reach the port can query or
+  ingest. The default bind is `127.0.0.1`; don't expose it publicly as is.
+  `DELETE /corpus` alone is guarded (see [Reset](#reset)).
+- **One worker process.** Writes are serialized by an in-process lock.
+- **Retrieval always returns `topK` chunks**, even when none is relevant; there
+  is no similarity threshold. Deciding that the evidence is insufficient is the
+  model's job, so abstention quality depends on the model following the
+  `INSUFFICIENT_EVIDENCE` instruction.
+- **Embedding model limits:** mostly English, at most 256 tokens per chunk, and
+  only `all-MiniLM-L6-v2` is supported. Changing it means re-ingesting the
+  corpus.
+- **No retries.** A Groq rate limit or timeout is returned to the caller as
+  429 or 504 rather than retried.
+- **Model availability depends on the Groq account.** Check `/ready` after
+  changing `GROQ_MODEL` or the key.
+- **No quality metrics yet.** The tests check the API contract, not whether
+  retrieval found the right passage or the answer is correct.
+- **No Docker image yet.** Run it from a local virtualenv.

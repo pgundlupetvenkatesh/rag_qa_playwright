@@ -9,10 +9,35 @@ any particular one. To have something real to test, the repo also ships a small
 separate Python component that the framework reaches only over HTTP, exactly as
 it would reach an external application.
 
+## Architecture and data flow
+
+```
+ TypeScript framework (Playwright)                    rag_service (Python, FastAPI)
+ ─────────────────────────────────                    ─────────────────────────────
+ data/golden/rag_test_cases.json                      ChromaDB corpus (.chroma/)
+   questions + labels stay here                         passages only, no labels
+          │                                                    ▲
+          ▼                                                    │ chunk + embed (local MiniLM)
+ tests ──► RagClient ──► RagServiceClient ──HTTP──► POST /corpus/documents
+                                          ──HTTP──► POST /retrieve ──► nearest chunks
+                                          ──HTTP──► POST /query ────► nearest chunks ──► Groq LLM
+                                                                                          │
+                                          ◄──────── answer or abstention + evidence ◄─────┘
+```
+
+- **Golden data** (questions, accepted answers, `answerable`) never leaves the test
+  side. Only passage text, title and source are ingested.
+- **Tests depend on `RagClient`**, not on `rag_service`. Another RAG app needs only
+  another adapter.
+- **Only `/query` calls the LLM.** Ingestion and `/retrieve` run locally at no cost.
+
+[`rag_service/README.md`](rag_service/README.md#architecture-and-data-flow) has the
+service-side detail, and [`INSIGHT.md`](INSIGHT.md) explains the concepts from scratch.
+
 ## Golden Dataset
 
 Loading SQuAD 2.0, normalizing a small slice of it, and validating that slice from a Playwright test.
-No RAG client, retrieval scoring, adversarial testing, or UI/API tests exist yet.
+Retrieval scoring, adversarial testing and UI tests don't exist yet.
 
 ### How the pieces fit
 
@@ -219,6 +244,33 @@ The Groq model id is configurable, and the default (`openai/gpt-oss-120b`) is no
 assumed to work. Which models a key can use depends on the Groq account, so
 `/ready` asks Groq and reports whether the configured model is available.
 
+### Embeddings
+
+Retrieval finds passages by meaning, not by keyword. The embedding model
+`all-MiniLM-L6-v2` turns each chunk, and later each question, into a vector of 384
+numbers, with similar meanings giving nearby vectors. ChromaDB stores the chunk
+vectors and returns the ones closest to the question by cosine similarity. The API
+reports `similarity = 1 - distance`, so higher means more related. Only those chunks
+go to the Groq model, which writes the answer.
+
+| | Embedding model | Language model |
+|---|---|---|
+| Job | Find the relevant chunks | Write the answer from them |
+| Model | `all-MiniLM-L6-v2` | `openai/gpt-oss-120b` (default) |
+| Runs | Locally, through Chroma's ONNX build, no key needed | On Groq, needs `GROQ_API_KEY` |
+
+- **Limit:** it reads at most 256 tokens, which is why passages are split into
+  chunks of about 1,000 characters.
+- **One model per corpus:** vectors from different models can't be compared, so the
+  collection refuses to open under a different model. Switching models means
+  re-ingesting the whole corpus.
+- **Why MiniLM is kept for now:** Groq offers no embedding model to this account.
+  Stronger local models exist, such as `BAAI/bge-small-en-v1.5`, but switching waits
+  for a retrieval hit-rate metric that can show whether one actually retrieves better.
+
+[`INSIGHT.md`](INSIGHT.md) explains vectors and embeddings from the beginning and
+compares other models.
+
 ## Setup
 
 ### Node
@@ -253,6 +305,12 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 cp .env.example .env           # then set GROQ_API_KEY; .env is gitignored
 ```
+
+Put your real key only in `rag_service/.env` (gitignored, and the commit hook blocks
+staging any `.env` file) or in a real environment variable. `.env.example` holds
+placeholders only. See
+[Groq API key](rag_service/README.md#groq-api-key) for handling, CI and what to do if a
+key leaks.
 
 ## Usage
 
@@ -298,9 +356,115 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/ready
 ```
 
+Run the service in the foreground of its own terminal, and stop it with Ctrl+C when you're
+done. If one was left running in the background, stop whatever is listening on the port:
+
+```bash
+lsof -ti tcp:8000 -sTCP:LISTEN | xargs kill
+```
+
+Stop the service before you delete `rag_service/.chroma`. A running service holds that
+folder open, and deleting it under the service makes later requests fail with 500. To empty
+the corpus while the service runs, use `DELETE /corpus` or `ingest_squad.py --reset`.
+
+Load the corpus once, with the service running (SQuAD passages and titles only; about
+2 minutes the first time, under a second when repeated):
+
+```bash
+python scripts/ingest_squad.py
+curl http://127.0.0.1:8000/corpus      # {"documents": 1204, "chunks": 1473, ...}
+```
+
+Example requests:
+
+```bash
+# Retrieval only: no LLM, free.
+curl -s -X POST http://127.0.0.1:8000/retrieve -H 'content-type: application/json' \
+  -d '{"question": "In what country is Normandy located?", "topK": 3}'
+
+# Retrieval plus a grounded answer: one Groq call.
+curl -s -X POST http://127.0.0.1:8000/query -H 'content-type: application/json' \
+  -d '{"question": "In what country is Normandy located?"}'
+```
+
+#### Try it in the browser
+
+With the service running, open **http://127.0.0.1:8000/docs**. FastAPI generates this
+interactive page from the API itself, and it lists every endpoint with its request and
+response shapes. To send a request:
+
+1. Click an endpoint.
+2. Click **Try it out**.
+3. Edit the JSON body.
+4. Click **Execute**.
+
+The response appears below, together with the matching `curl` command.
+
+| Endpoint         | Example body                                    | Groq cost         |
+|------------------|-------------------------------------------------|-------------------|
+| `GET /corpus`    | none                                            | free              |
+| `POST /retrieve` | `{"question": "Where is Normandy?", "topK": 3}` | free, search only |
+| `POST /query`    | `{"question": "Where is Normandy?"}`            | one completion    |
+
+`DELETE /corpus` really empties the corpus; `python scripts/ingest_squad.py` reloads it.
+
+<details>
+<summary><code>POST /retrieve</code>: the nearest chunks with their similarity scores</summary>
+
+![POST /retrieve in the /docs page](docs/images/rag_service_post_retrieve.png)
+
+</details>
+
+<details>
+<summary><code>POST /query</code>: an answer, the evidence it used, token usage and timings</summary>
+
+![POST /query in the /docs page](docs/images/rag_service_post_query.png)
+
+</details>
+
 The unit tests ignore `.env` and the shell environment, inject settings through FastAPI's
 dependency overrides, and replace Groq with a mocked client or HTTP transport. They need neither a
 key nor a network connection.
+
+### Test a RAG service through the framework client
+
+Tests talk to a RAG system only through the `RagClient` interface
+(`src/clients/ragClient.ts`), which covers readiness, ingestion, retrieval and answers.
+`RagServiceClient` is its adapter for the reference service, built on Playwright's
+`APIRequestContext`. To target another RAG app, write another adapter; the tests stay as
+they are. Two environment variables configure where the service is and how long to wait:
+
+| Variable         | Default                 | Meaning                                                    |
+| ---------------- | ----------------------- | ---------------------------------------------------------- |
+| `RAG_BASE_URL`   | `http://127.0.0.1:8000` | Base URL of the RAG service under test.                    |
+| `RAG_TIMEOUT_MS` | `60000`                 | Per-request timeout. Keep it above the service's Groq timeout. |
+
+The suites are split by what they need:
+
+```bash
+npm run test:client       # adapter vs a local mock server: offline, no service, no key
+npm run test:service      # a running service; ingestion and retrieval, no LLM calls
+npm run test:groq         # a running service holding a working GROQ_API_KEY (live calls)
+npm run test:integration  # service + groq
+```
+
+| Suite | Needs | Groq calls |
+|---|---|---|
+| `npm test` (`dataset` + `client`) | Nothing (offline) | None |
+| `pytest` in `rag_service/` | Nothing (offline; Groq and the embedder are faked) | None |
+| `npm run test:service` | The service running at `RAG_BASE_URL` | None |
+| `npm run test:groq` | The service running **with a working `GROQ_API_KEY`** | About 2 answers per run |
+
+Every test that reaches Groq is tagged `@groq`, and only the `groq` project runs them,
+so the ordinary commands never use your Groq quota.
+
+`service` and `groq` first run a setup step that ingests the 60 golden passages through
+`toCorpusDocuments` (`src/utils/corpusDocuments.ts`). That helper sends each distinct
+passage once, under the same `squad-<sha1>` id that `ingest_squad.py` uses, with only its
+title and source; questions, answers and `answerable` never leave the test side. Ingestion
+is idempotent, so against an already-loaded corpus the setup reports all 60 as unchanged,
+and nothing is ever deleted. The Groq tests check the response contract (an answer, or
+`null` with `abstained: true`, plus evidence), not whether the answer is right.
 
 ### Generate the API documentation
 
@@ -318,30 +482,82 @@ does not resolve, rather than emitting a dead link.
 Other commands:
 
 ```bash
-npm test          # run the full Playwright suite
+npm test          # the offline suites: dataset + client (no service needed)
 npm run typecheck # tsc --noEmit
 ```
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It needs no
+secrets and makes no Groq calls. It has three parallel jobs:
+
+| Job            | What it runs                                                                                       |
+|----------------|----------------------------------------------------------------------------------------------------|
+| `framework`    | `npm ci`, `npm run typecheck`, `npm run docs`, `npm test` (dataset + client)                       |
+| `service-unit` | `pip install -r rag_service/requirements.txt`, `pytest` (fakes only)                               |
+| `integration`  | starts `python -m app` with no key and an empty job-local corpus, waits for `/health`, runs `npm run test:service` |
+
+The integration job's `service-setup` ingests the 60 golden passages through the client. That is
+the controlled corpus: titles and passages only. The job never loads the full SQuAD set and never
+resets anything. After the tests it prints `GET /corpus` and stops the service. It always uploads
+`playwright-report/`, `test-results/` and `ci-logs/` (the service log and corpus stats) as an
+artifact. The ONNX embedding model is cached between runs.
+
+**Live Groq tests are opt-in.** To run them:
+
+1. Add a repository secret `GROQ_API_KEY` (Settings → Secrets and variables → Actions).
+2. Start the workflow by hand, with the `groq` box ticked: **Actions → CI → Run workflow**, or
+   `gh workflow run ci.yml -f groq=true`.
+
+Only that run passes the key to the service, and only to the step that starts it. The run waits
+for `/ready`, then also runs `npm run test:groq`, which makes two Groq completions plus model
+listings. If the secret is missing, the run fails at once. Pull requests from forks never
+receive secrets.
 
 ## Layout
 
 ```
+.github/workflows/ci.yml          CI: offline checks, pytest, keyless service tests; Groq on manual dispatch
 data/golden/rag_test_cases.json   generated golden dataset (committed)
 scripts/prepareDataset.py         SQuAD 2.0 -> normalized JSON
 src/models/ragTestCase.ts         normalized test case contract
 src/utils/datasetLoader.ts        loads + validates the golden dataset
+src/utils/corpusDocuments.ts      golden cases -> label-free corpus documents
+src/clients/ragClient.ts          RagClient interface and types (system-agnostic)
+src/clients/ragServiceClient.ts   RagClient adapter for rag_service (APIRequestContext)
+src/config/ragServiceConfig.ts    RAG_BASE_URL / RAG_TIMEOUT_MS
 tests/dataset/ragDataset.spec.ts  dataset validation test
+tests/client/                     adapter tests against a local mock server, config tests (offline)
+tests/integration/                tests against a running service; @groq ones need a live key
 typedoc.json                      API documentation config
 docs/api/                         generated API reference (gitignored)
+docs/images/                      README screenshots (the service's /docs page)
 rag_service/app/                  reference RAG service: FastAPI app, settings, readiness, chunking, corpus and retrieval, Groq generation
 rag_service/scripts/ingest_squad.py  loads SQuAD validation passages into the service
 rag_service/tests/                service unit tests (pytest)
 rag_service/requirements.txt      service Python dependencies
 rag_service/.env.example          placeholder-only template for the gitignored rag_service/.env
 rag_service/README.md             service setup, configuration, ingestion, performance
+INSIGHT.md                        beginner explainer: RAG, vectors, embeddings, design choices
 ```
+
+## Known limitations and costs
+
+- **Costs:** only Groq calls cost anything. That means one completion per `/query`
+  (roughly 800-1,000 prompt tokens with the default 4 chunks) and one model listing per
+  `/ready`. On the free tier these count against rate limits. Everything else runs
+  locally.
+- **The reference service has no authentication** and runs as one worker process. It is
+  meant for local testing, bound to `127.0.0.1`.
+- **The tests check contracts, not quality.** Nothing yet measures whether retrieval found
+  the right passage or the answer is correct.
+- **Retrieval has no relevance threshold.** Abstention relies on the model.
+
+The full list is in
+[`rag_service/README.md`](rag_service/README.md#known-limitations-and-costs).
 
 ## Planned
 
-Not yet implemented: the Playwright API adapter and API tests that drive it, Ragas (RAG evaluation),
+Not yet implemented: retrieval and answer-quality metrics over the golden set, Ragas (RAG evaluation),
 Promptfoo (LLM/adversarial testing), Allure (reporting), Langfuse (observability),
 and UI tests.

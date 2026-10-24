@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings, get_settings
 from app.corpus import Corpus, SourceDocument
-from app.main import app, get_generator
+from app.main import app, get_corpus, get_generator
 from tests.conftest import FakeEmbedder
 
 DOCS = [
@@ -114,6 +114,22 @@ def test_retrieve_on_empty_corpus_is_an_explicit_retrieval_error(client: TestCli
         "stage": "retrieval",
         "code": "corpus_empty",
         "message": "the corpus is empty; ingest documents first",
+    }
+
+
+def test_retrieve_with_no_results_from_a_non_empty_corpus_is_an_explicit_retrieval_error(
+    seeded: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus: Corpus = app.dependency_overrides[get_corpus]()
+    monkeypatch.setattr(corpus, "search", lambda question, top_k: [])
+
+    response = seeded.post("/retrieve", json={"question": "anything"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == {
+        "stage": "retrieval",
+        "code": "no_results",
+        "message": "retrieval returned no chunks",
     }
 
 
