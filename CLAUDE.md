@@ -5,18 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this project is
 
 A reusable AI/RAG quality-engineering framework built on Playwright + TypeScript. It exists to test
-**existing, external** RAG applications — we do not build a RAG application here, and no system under
-test is wired up yet.
+RAG applications over their API/UI and stays agnostic of which one. `rag_service/` is a small
+**reference** RAG service (Python, FastAPI) living in this repo as a system under test; the framework
+must not depend on it beyond HTTP.
 
-Planned stack, none of it implemented yet: Hugging Face datasets (golden data — done), Ragas (RAG
-evaluation), Promptfoo (LLM/adversarial), Allure (reporting), Langfuse (observability).
+Planned stack: Hugging Face datasets (golden data — done), FastAPI + ChromaDB + Groq (reference
+service — in progress), Ragas (RAG evaluation), Promptfoo (LLM/adversarial), Allure (reporting),
+Langfuse (observability).
 
-## Current state — Milestone 1 only
+## Current state — Milestone 2 in progress
 
-Delivered: the golden evaluation dataset and its validation. That is all.
+Delivered: Milestone 1 (golden evaluation dataset and its validation). Milestone 2 so far in
+`rag_service/`: typed settings, `GET /health`, `GET /ready`, and a persistent ChromaDB corpus with
+chunked ingestion (`POST /corpus/documents`), stats (`GET /corpus`), guarded reset
+(`DELETE /corpus`), plus `scripts/ingest_squad.py` to load the SQuAD validation passages;
+retrieval (`POST /retrieve`, no LLM) and grounded Groq answers (`POST /query`).
 
-**Not built yet — do not assume these exist:** any RAG client/adapter, Ragas, Promptfoo, Allure,
-Langfuse, UI tests, API tests, Playwright fixtures, browser projects.
+**Not built yet — do not assume these exist:** any TS RAG client/adapter, API tests, Playwright projects/fixtures, browser projects,
+Ragas, Promptfoo, Allure, Langfuse, UI tests.
 
 When asked to add functionality, build it rather than assuming helpers are available.
 
@@ -34,6 +40,14 @@ npx playwright test tests/dataset/ragDataset.spec.ts:29   # single test by line
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python scripts/prepareDataset.py
+
+# Reference RAG service (own venv, Python 3.13 via rag_service/.python-version)
+cd rag_service && uv venv .venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+cp .env.example .env         # gitignored; set GROQ_API_KEY
+pytest                       # service unit tests, offline
+python -m app                # serves on API_HOST:API_PORT (default 127.0.0.1:8000)
+python scripts/ingest_squad.py [--reset]   # load 1,204 SQuAD passages via the API (~2 min first time)
 ```
 
 Playwright browsers are already installed locally. No browser project is declared in
@@ -66,6 +80,46 @@ Changing the seed, the sort, or the pass order changes the dataset.
 
 `data/golden/rag_test_cases.json` is **generated but committed** — edit the script, never the JSON.
 
+**`rag_service/` is a separate component, coupled only over HTTP.** It has its own
+`requirements.txt`, `.gitignore`, venv and pytest suite, independent of the root dataset-prep env.
+TS code never imports from `rag_service/`, and the service never reads `src/` — so the framework
+stays usable against any external RAG app. Wire format is camelCase (`ApiModel` in
+`rag_service/app/schemas.py` aliases snake_case fields), matching the TS side. Settings are a
+pydantic-settings `Settings` in `rag_service/app/config.py`, read from env vars then
+`rag_service/.env` (cwd-independent) and validated at startup; `get_settings` is a FastAPI
+dependency so tests swap it through `app.dependency_overrides`. `/health` contacts nothing; `/ready`
+calls Groq once to confirm `GROQ_MODEL` exists for the key — model availability is per-account, so the
+default id is never assumed to work.
+
+**Evaluation labels never reach the RAG corpus.** Questions, `groundTruth` and `answerable` stay on
+the test side; the service must not read `data/golden/`. A corpus that contains the answers turns
+every retrieval and grounding test into a lookup. Enforced twice: `DocumentMetadata` in
+`schemas.py` is a closed allowlist (`title`, `source`; unknown keys → 422), and
+`scripts/ingest_squad.py` selects only SQuAD's `title` and `context` columns.
+
+**Corpus ingestion is idempotent by document id** (`rag_service/app/corpus.py`). Chunk ids are
+`<documentId>#<chunkIndex>`; each chunk stores a `fingerprint` of text + metadata + chunk params +
+embedding model. Identical re-ingest → `unchanged`, nothing re-embedded; changed → upsert new chunks
+first, then delete leftover ids, so no stale chunk survives and a document is never missing
+mid-replace. Writes run under one process-wide lock — run a single uvicorn worker. The collection
+records its embedding model and refuses to open under a different one. SQuAD document ids are
+`squad-` + first 16 hex of SHA-1(passage), so the TS side can derive a golden case's expected
+document id from `context[0]` without the service reading golden data.
+
+**Retrieval and generation are separate stages.** `Corpus.search` (`corpus.py`) embeds the
+question and returns the nearest chunks; `/retrieve` exposes it without touching the LLM. All Groq
+answer code is in `app/generation.py` behind the `Generator` protocol (`get_generator` dependency in
+`main.py`; tests override it). Errors are `{"detail": {stage, code, message}}` with `stage`
+`retrieval` or `generation`, so a test can tell which half failed. An empty corpus is a 409
+`corpus_empty`, never an empty result or an abstention — otherwise an unanswerable golden case would
+"pass" against an empty store. A missing key fails as `missing_credentials` before retrieval runs.
+Abstention is the model replying the exact `ABSTAIN_SENTINEL`; `evidence` in the response is what
+retrieval returned, never model-claimed citations. Groq calls are one attempt (`max_retries=0`),
+bounded by `REQUEST_TIMEOUT_SECONDS`, and error messages never echo provider text.
+
+**Destructive endpoints are guarded.** `DELETE /corpus` obeys `ALLOW_RESET`: unset → loopback
+callers only (checked on the TCP peer address, not `API_HOST`); `true` → anyone; `false` → 403.
+
 ## Conventions
 
 - `tsconfig.json` is `strict` with `noUncheckedIndexedAccess`. `tsc` is typecheck-only; Playwright
@@ -76,7 +130,7 @@ Changing the seed, the sort, or the pass order changes the dataset.
 - Doc comments are **TSDoc, not JSDoc**. Cross-references are `{@link Foo}`; a bare `{Foo}` after
   `@throws`/`@param` is malformed and renders as literal text. `typedoc.json` sets
   `treatValidationWarningsAsErrors`, so `npm run docs` fails on a broken `{@link}` target.
-- Python docstrings in `scripts/` are Sphinx-style reStructuredText: `:param:`/`:type:`/`:returns:`/
+- Python docstrings in `scripts/` and `rag_service/` are Sphinx-style reStructuredText: `:param:`/`:type:`/`:returns:`/
   `:rtype:`/`:raises:` field lists and `:func:` cross-references. Nothing renders them yet; the
   style is for consistency and a future autodoc build.
 - `typedoc.json` uses `entryPointStrategy: "expand"` over `src`, so new modules are documented
@@ -94,6 +148,27 @@ Changing the seed, the sort, or the pass order changes the dataset.
   cleanly under both. Revisit only when TypeDoc ships TS 7 support.
 - `tsconfig.json` sets `noEmit`, so nothing emits `.d.ts`. Any tool that consumes declaration files
   (e.g. API Extractor) needs its own build config — it cannot reuse this one as-is.
+- `CHUNK_SIZE` defaults to 1000 characters because all-MiniLM-L6-v2 embeds at most **256 tokens** and
+  silently truncates the rest (Chroma's ONNX tokenizer, `max_length=256`). Measured on the SQuAD
+  validation passages with 1000/200 word-aligned chunking (`app/chunking.py`): 1,473 chunks, 235 of
+  1,204 passages split, 7 chunks (0.5%) over 256 tokens. Raising it well past ~1100 means long passages are only partly searchable.
+  Because passages get split, a retrieved chunk is not a whole golden `context` — retrieval
+  checks must match on the chunk's parent-passage id, not on text equality.
+- `EMBEDDING_MODEL` only accepts `all-MiniLM-L6-v2`: the Sentence Transformers model, but executed by
+  Chroma's bundled ONNX build (`MiniLmOnnxEmbedder` in `app/embeddings.py`), not the
+  `sentence-transformers` package — this dev machine is an Intel Mac and torch ships no current
+  x86_64 macOS wheels (last is 2.2.2). `requirements.txt` pins `onnxruntime<1.24` **only** on Intel
+  macOS (newer versions have no wheels there); Linux/Docker get current releases. Don't drop the
+  marker or widen the pin.
+- gpt-oss and qwen3 take different reasoning parameters on Groq: gpt-oss rejects `reasoning_format`
+  and needs `include_reasoning: false`; `qwen/qwen3.8-27b` doesn't reason by default and gets
+  none (`_reasoning_params` in `app/generation.py`). Adding another model family may need a branch
+  there — a wrong parameter is a Groq 400 → `provider_error`.
+- Unit tests never load the real embedding model: they inject `FakeEmbedder` (`tests/conftest.py`)
+  through the `Embedder` protocol. Only `scripts/ingest_squad.py` against a running service
+  exercises the ONNX model (first full ingest ≈ 113 s on this machine, ~660 MB RSS).
+- `rag_service/` tests depend on **`httpx2`, not `httpx`**. Current Starlette deprecates plain `httpx`
+  behind FastAPI's `TestClient` and warns on every run; don't "fix" the name back.
 - This repo does **not** auto-delete branches on PR merge (`delete_branch_on_merge` is off). Delete
   both the local and the remote branch yourself after a PR merges.
 
@@ -110,7 +185,7 @@ Changing the seed, the sort, or the pass order changes the dataset.
 - `hooks/guard-foreign-refs.sh` — blocks `git commit` when staged changes name another repository.
   The names are derived from sibling checkouts at run time, so none is hard-coded here; add a
   legitimate one to `.claude/allowed-refs.txt`.
-- `hooks/claude-md-reminder.sh` — on `Stop`, flags that `src/` or `scripts/` changed while CLAUDE.md
+- `hooks/claude-md-reminder.sh` — on `Stop`, flags that `src/`, `scripts/` or `rag_service/` changed while CLAUDE.md
   did not. All hooks are fail-open and loop-safe.
 
 ## Working style

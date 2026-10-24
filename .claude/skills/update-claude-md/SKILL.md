@@ -2,10 +2,12 @@
 name: update-claude-md
 description: >-
   Update CLAUDE.md so it stays accurate after a significant change to this
-  RAG QA framework. Use after adding/removing/renaming a module under src/,
-  a test spec, a Playwright fixture or project, or a script; changing how
-  things are run (npm scripts, Playwright flags, the Python dataset
-  pipeline); changing the RagTestCase contract or the dataset composition;
+  RAG QA framework. Use after adding/removing/renaming a module under src/
+  or rag_service/, a test spec, a Playwright fixture or project, a service
+  endpoint, or a script; changing how things are run (npm scripts,
+  Playwright flags, the Python dataset pipeline, how rag_service is
+  installed, configured, or started); changing the RagTestCase contract or
+  the dataset composition;
   adding a dependency or tool (Ragas, Promptfoo, Allure, Langfuse); or
   introducing a new convention or gotcha. Trigger when finishing such a
   change, before committing, or when the user asks to "update CLAUDE.md" /
@@ -26,7 +28,8 @@ reconcile it.
 Update CLAUDE.md when a change touches any of these:
 
 - **Commands** — a new/changed npm script, Playwright invocation or flag, a
-  new test directory, a change to the Python dataset pipeline.
+  new test directory, a change to the Python dataset pipeline, or to how
+  `rag_service/` is installed, tested, or started.
 - **Current state** — a milestone landing. This section names what exists and
   explicitly lists what does *not*; a new capability must move from the
   "not built yet" list into the delivered list. A stale "not built yet" entry
@@ -34,7 +37,8 @@ Update CLAUDE.md when a change touches any of these:
   something that already exists.
 - **Architecture** — a new or removed module under `src/`, a change to the
   `RagTestCase` contract, the Node↔Python boundary, the dataset generator's
-  selection logic, or how a later tool (Ragas, Promptfoo, Allure, Langfuse)
+  selection logic, a `rag_service/` endpoint, env var, or storage/model
+  choice, or how a later tool (Ragas, Promptfoo, Allure, Langfuse)
   is wired in.
 - **Conventions** — a new pattern code must follow (typing, doc comments,
   error accumulation, fixture style).

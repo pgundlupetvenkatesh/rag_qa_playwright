@@ -1,0 +1,21 @@
+# Python dependencies for the reference RAG service (rag_service/).
+# Separate from the repo-root requirements.txt, which serves only the golden
+# dataset generator. Use Python 3.13 (see .python-version).
+fastapi>=0.142.0
+uvicorn>=0.54.0
+# Typed settings from env vars and rag_service/.env (pulls in python-dotenv).
+pydantic-settings>=2.15.0
+# Groq API client. /ready uses it to confirm GROQ_MODEL exists for the key.
+groq>=1.7.0
+# Persistent vector store. Its bundled ONNX all-MiniLM-L6-v2 is the embedder.
+chromadb>=1.5.9
+# onnxruntime 1.24+ ships no Intel-Mac (x86_64 macOS) wheels; every other
+# platform, Linux/Docker included, takes the current release via chromadb.
+onnxruntime<1.24; sys_platform == "darwin" and platform_machine == "x86_64"
+# SQuAD loader for scripts/ingest_squad.py only; the service itself never imports it.
+datasets>=4.0.0
+
+# Tests
+pytest>=9.0.0
+# HTTP client behind FastAPI's TestClient (Starlette deprecated plain httpx).
+httpx2>=2.13.0
